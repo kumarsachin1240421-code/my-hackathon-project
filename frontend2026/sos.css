@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════
+   CarePill — SOS Emergency Styles
+   ═══════════════════════════════════════════════ */
+
+/* ── SOS Modal Overlay ── */
+.sos-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(39, 54, 75, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+
+.sos-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sos-modal {
+  background: var(--bg);
+  border-radius: 24px;
+  box-shadow: 12px 12px 30px var(--shade), -12px -12px 30px var(--light);
+  padding: 32px 28px;
+  width: 90%;
+  max-width: 440px;
+  text-align: center;
+  transform: scale(0.95);
+  transition: transform 0.25s;
+}
+
+.sos-overlay.active .sos-modal {
+  transform: scale(1);
+}
+
+/* ── Pulsing SOS icon ── */
+.sos-pulse-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c94346, #e05672);
+  box-shadow: 0 0 0 0 rgba(201, 67, 70, 0.5);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  animation: sosPulse 1.4s infinite;
+}
+
+.sos-pulse-icon .material-symbols-outlined {
+  font-size: 36px;
+  color: #fff;
+}
+
+@keyframes sosPulse {
+  0% { box-shadow: 0 0 0 0 rgba(201, 67, 70, 0.5); }
+  70% { box-shadow: 0 0 0 18px rgba(201, 67, 70, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 67, 70, 0); }
+}
+
+.sos-modal h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: var(--red);
+  font-weight: 800;
+}
+
+.sos-modal p {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── Countdown ── */
+.sos-countdown {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--red);
+  margin: 0 0 16px;
+  font-family: Manrope, sans-serif;
+}
+
+/* ── Buttons ── */
+.sos-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+
+.sos-confirm {
+  padding: 14px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #c94346, #e05672);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 4px 4px 12px rgba(201, 67, 70, 0.35);
+  transition: transform 0.15s;
+}
+
+.sos-confirm:hover { transform: translateY(-1px); }
+
+.sos-cancel {
+  padding: 14px 28px;
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--raised);
+  transition: box-shadow 0.2s;
+}
+
+.sos-cancel:active { box-shadow: var(--inset); }
+
+/* ── Contact Status List ── */
+.sos-status-list {
+  text-align: left;
+  margin: 18px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sos-contact-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  box-shadow: var(--inset);
+  font-size: 13px;
+}
+
+.sos-contact-status .name { font-weight: 700; }
+.sos-contact-status .status { font-size: 12px; color: var(--muted); }
+.sos-contact-status .status.sent { color: #0d9e71; font-weight: 700; }
+.sos-contact-status .status.failed { color: var(--red); font-weight: 700; }
+.sos-contact-status .status.sending { color: var(--blue); }
+
+/* ── SOS Settings (in Settings view) ── */
+.sos-settings {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.sos-contact-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: var(--raised);
+}
+
+.sos-contact-card .info { display: grid; gap: 2px; }
+.sos-contact-card .info strong { font-size: 14px; }
+.sos-contact-card .info small { color: var(--muted); font-size: 12px; }
+
+.sos-contact-card .remove-contact {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--red);
+}
+
+.sos-contact-card .remove-contact:active { box-shadow: var(--inset); }
+
+.add-contact-row {
+  display: flex;
+  gap: 10px;
+}
+
+.add-contact-row input {
+  flex: 1;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+}
+
+.add-contact-row input:focus {
+  box-shadow: inset 6px 6px 12px var(--shade), inset -6px -6px 12px var(--light), 0 0 0 2px var(--blue);
+}
+
+.add-contact-btn {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-contact-btn:active { box-shadow: var(--inset); }
+
+@media (max-width: 480px) {
+  .sos-modal { padding: 24px 20px; }
+  .sos-actions { flex-direction: column; }
+  .add-contact-row { flex-direction: column; }
+}
