@@ -160,6 +160,7 @@ const AuthManager = (() => {
     const shell = document.getElementById('appShell');
     if (landing) landing.style.display = 'flex';
     if (shell) shell.style.display = 'none';
+    if (typeof hideLoader === 'function') hideLoader();
   }
 
   function showApp() {
@@ -168,11 +169,16 @@ const AuthManager = (() => {
     if (landing) landing.style.display = 'none';
     if (shell) shell.style.display = '';
 
-    // Update user display in app sidebar
-    const profileName = document.querySelector('.profile strong');
-    if (profileName && currentUser) {
-      profileName.textContent = currentUser.name || 'Health Profile';
+    // Update user display in app sidebar (persisting localStorage custom name)
+    const profileName = document.querySelector('#sidebarUserName') || document.querySelector('.profile strong');
+    if (profileName) {
+      const storedCustomName = localStorage.getItem('carepill_user_name');
+      profileName.textContent = storedCustomName || (currentUser && currentUser.name) || 'Alex Johnson';
     }
+    if (typeof updateAvatarDisplays === 'function') {
+      updateAvatarDisplays();
+    }
+    if (typeof hideLoader === 'function') hideLoader();
   }
 
   function openAuthModal(loginMode = true) {

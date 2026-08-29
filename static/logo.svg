@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background / Ambient Glow Filters -->
+    <filter id="shadowBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" />
+    </filter>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Top Cap Teal / Turquoise Gradients -->
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2aa" />
+      <stop offset="40%" stop-color="#00b49f" />
+      <stop offset="80%" stop-color="#008075" />
+      <stop offset="100%" stop-color="#005952" />
+    </linearGradient>
+    <linearGradient id="tealHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Bottom Cap White / Silver Gradients -->
+    <linearGradient id="whiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="50%" stop-color="#f3f6fa" />
+      <stop offset="85%" stop-color="#d6dfe9" />
+      <stop offset="100%" stop-color="#b0becf" />
+    </linearGradient>
+    <linearGradient id="whiteHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Ring Gradient & Glow -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60e1ff" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <!-- Clip path for top half of tilted pill -->
+    <clipPath id="pillClip">
+      <rect x="-65" y="-170" width="130" height="340" rx="65" />
+    </clipPath>
+  </defs>
+
+  <!-- Ambient Shadow Beneath Pill -->
+  <ellipse cx="256" cy="425" rx="110" ry="24" fill="#4a6b8c" opacity="0.35" filter="url(#shadowBlur)" />
+  <ellipse cx="256" cy="425" rx="70" ry="14" fill="#2d4a6b" opacity="0.45" filter="url(#shadowBlur)" />
+
+  <!-- Back Portion of the Glowing Orbit Ring -->
+  <g transform="translate(256, 256) rotate(-12)">
+    <path d="M -180 0 A 180 50 0 0 1 180 0" fill="none" stroke="url(#ringGrad)" stroke-width="4.5" stroke-linecap="round" filter="url(#glow)" opacity="0.8" />
+  </g>
+
+  <!-- 3D Pill Body Group (Tilted at 32 degrees) -->
+  <g transform="translate(256, 245) rotate(32)">
+    
+    <!-- Outer Pill Base with Shadow -->
+    <rect x="-65" y="-165" width="130" height="330" rx="65" fill="#000" opacity="0.1" filter="url(#shadowBlur)" />
+
+    <!-- Entire Pill Container with Clip -->
+    <g clip-path="url(#pillClip)">
+      
+      <!-- 1. Top Teal Half -->
+      <path d="M -65 -170 L 65 -170 L 65 0 L -65 0 Z" fill="url(#tealGrad)" />
+      
+      <!-- Top Teal 3D Specular Highlight Ridge -->
+      <path d="M -50 -150 Q -58 -100 -55 -20 Q -40 -120 -20 -150 Z" fill="url(#tealHighlight)" />
+      <ellipse cx="-25" cy="-100" rx="14" ry="45" transform="rotate(-5 -25 -100)" fill="#ffffff" opacity="0.45" filter="url(#shadowBlur)" />
+      <path d="M -65 -170 A 65 65 0 0 1 65 -170" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.5" />
+
+      <!-- 2. Bottom White Half -->
+      <path d="M -65 0 L 65 0 L 65 170 L -65 170 Z" fill="url(#whiteGrad)" />
+      
+      <!-- White Half Specular Highlight Ridge -->
+      <path d="M -52 15 Q -58 70 -52 140 Q -40 80 -25 20 Z" fill="url(#whiteHighlight)" />
+      <ellipse cx="-25" cy="80" rx="12" ry="40" transform="rotate(-5 -25 80)" fill="#ffffff" opacity="0.6" filter="url(#shadowBlur)" />
+
+      <!-- Center Seam Line & Inner Ambient Shading -->
+      <line x1="-65" y1="0" x2="65" y2="0" stroke="#00473e" stroke-width="2.5" opacity="0.6" />
+      <line x1="-65" y1="1" x2="65" y2="1" stroke="#ffffff" stroke-width="1.5" opacity="0.7" />
+
+      <!-- Right Edge Shading for Deep 3D Curvature -->
+      <path d="M 45 -160 Q 65 -50 65 0 Q 65 50 45 160 L 65 170 L 65 -170 Z" fill="#031d28" opacity="0.32" />
+    </g>
+  </g>
+
+  <!-- Front Portion of the Glowing Orbit Ring with Arrow Head -->
+  <g transform="translate(256, 256) rotate(-12)">
+    <!-- Glowing Orbit Arc -->
+    <path d="M 180 0 A 180 50 0 0 1 -180 0" fill="none" stroke="url(#ringGrad)" stroke-width="5" stroke-linecap="round" filter="url(#glow)" />
+    <path d="M 180 0 A 180 50 0 0 1 -180 0" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.9" />
+
+    <!-- Orbiting Arrowhead (Cyan glowing) -->
+    <g transform="translate(160, 22) rotate(22)" filter="url(#glow)">
+      <polygon points="0,0 -16,-10 -12,0 -16,10" fill="#ffffff" />
+      <polygon points="0,0 -16,-10 -12,0 -16,10" fill="#38bdf8" opacity="0.75" />
+    </g>
+  </g>
+</svg>

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#e0e5ec">
   <meta name="description" content="CarePill — Smart medicine reminders, dosage tracking, refill alerts, and caregiver support. Never miss a medicine again.">
-  <title>CarePill — Medicine Management System</title>
+  <title>CarePill — Medicine reminder and dosage tracker</title>
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <!-- Leaflet.js for pharmacy map -->
@@ -29,6 +30,20 @@
 <body>
 
   <!-- ═══════════════════════════════════════════
+       GLOBAL ORBIT CAPSULE BUFFER (Requirement 4)
+       100% Solid #f4f5f6 Opaque Background
+       ═══════════════════════════════════════════ -->
+  <div class="global-loader-overlay" id="globalLoader" aria-label="Loading CarePill" role="status" aria-live="polite">
+    <div class="stage">
+      <div class="orbit">
+        <div class="core"></div>
+        <div class="pod teal"></div>
+        <div class="pod silver"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
        LANDING PAGE (shown when not authenticated)
        ═══════════════════════════════════════════ -->
   <div class="landing-page" id="landingPage">
@@ -37,11 +52,11 @@
     <header class="landing-nav">
       <div class="landing-brand">
         <div class="landing-logo" aria-label="CarePill Logo">
-          <span class="material-symbols-outlined logo-icon">medication</span>
+          <img src="/static/logo.svg" onerror="this.src='logo.svg'" class="brand-logo-img" alt="CarePill Logo">
         </div>
         <div class="landing-brand-text">
           <h1>CarePill</h1>
-          <p>Medicine Management System</p>
+          <p>Medicine reminder and dosage tracker</p>
         </div>
       </div>
       <div class="landing-auth-buttons">
@@ -249,7 +264,35 @@
        ═══════════════════════════════════════════ -->
   <div id="appShell" style="display:none">
     <aside class="sidebar" aria-label="Primary navigation">
-      <div class="profile"><div class="avatar" aria-hidden="true"><span class="material-symbols-outlined">person</span></div><div><strong>Health Profile</strong><small>Medication plan: Active</small></div></div>
+      <div class="profile" id="sidebarProfile">
+        <div class="avatar" id="sidebarAvatar" aria-label="Health Profile Avatar" title="Click to update profile photo">
+          <span class="material-symbols-outlined avatar-icon" id="sidebarAvatarIcon">person</span>
+          <img class="avatar-photo" id="sidebarAvatarImg" alt="Profile" style="display:none;">
+          <div class="avatar-badge" title="Add / change picture"><span class="material-symbols-outlined">photo_camera</span></div>
+        </div>
+        <div class="profile-info-block">
+          <!-- Click-to-Edit Name Feature (Requirement 5) -->
+          <div class="user-name-wrapper" id="userNameWrapper">
+            <div class="user-name-row" id="userNameRow">
+              <strong id="sidebarUserName" class="editable-name" title="Click to edit name">Alex Johnson</strong>
+              <button type="button" class="name-edit-pencil-btn" id="editNamePencilBtn" title="Edit name" aria-label="Edit name">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+            </div>
+            <div class="name-inline-edit" id="nameInlineEdit" style="display:none;">
+              <input type="text" id="inlineNameInput" class="inline-name-input" maxlength="35" placeholder="Enter name">
+              <button type="button" class="name-action-btn save" id="saveInlineNameBtn" title="Save name" aria-label="Save name">
+                <span class="material-symbols-outlined">check</span>
+              </button>
+              <button type="button" class="name-action-btn cancel" id="cancelInlineNameBtn" title="Cancel" aria-label="Cancel editing">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+          <small id="sidebarUserSubtitle">Medication plan: Active</small>
+          <div><button type="button" class="profile-upload-link" id="sidebarAddPhotoBtn">Add Profile Picture</button></div>
+        </div>
+      </div>
       <nav class="side-nav">
         <button class="nav-item active" data-view="Today"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
         <button class="nav-item" data-view="Schedule"><span class="material-symbols-outlined">event_note</span>Schedule</button>
@@ -263,7 +306,14 @@
       <small class="version">v2.0.0</small>
     </aside>
     <div class="app">
-      <header class="mobile-header"><button class="avatar menu-button" id="menuButton" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button><strong>CarePill</strong><button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button></header>
+      <header class="mobile-header">
+        <button class="avatar menu-button" id="menuButton" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <img src="/static/logo.svg" onerror="this.src='logo.svg'" style="width:28px;height:28px;" alt="CarePill">
+          <strong>CarePill</strong>
+        </div>
+        <button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button>
+      </header>
       <main>
         <section class="page-heading">
           <div>
@@ -276,20 +326,105 @@
               <span class="material-symbols-outlined">add_circle</span>
               <span>New Schedule</span>
             </button>
-            <div class="pending"><i></i><span id="pendingCount">2 Pending</span></div>
+            <div class="pending clickable" id="pendingBadge" role="button" tabindex="0" title="Click to view pending medications" aria-label="2 Pending doses - click to view">
+              <i></i><span id="pendingCount">2 Pending</span>
+            </div>
           </div>
         </section>
         <section class="progress-card" aria-label="Daily progress"><div><span>Daily progress</span><strong id="progressText">1 of 3 doses complete</strong></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div></section>
         <section class="medicine-list" aria-label="Today's medicines">
           <article class="medicine-card due" data-id="1" data-medicine="Atorvastatin"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon"><span class="material-symbols-outlined">medication</span></div><div><h2>Atorvastatin</h2><p>20mg · Take with food</p></div></div><div class="time"><strong>08:00 AM</strong><em>Due now</em></div></div><div class="pills"><span><span class="material-symbols-outlined">inventory_2</span><span class="stock">12 left</span></span><span><span class="material-symbols-outlined">repeat</span>Daily</span></div><div class="actions"><button class="take"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Taken</span></button><button class="icon-action snooze" aria-label="Snooze Atorvastatin"><span class="material-symbols-outlined">snooze</span></button><button class="icon-action dismiss" aria-label="Dismiss Atorvastatin"><span class="material-symbols-outlined">close</span></button></div></article>
           <article class="medicine-card" data-id="2" data-medicine="Lisinopril"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon muted"><span class="material-symbols-outlined">water_drop</span></div><div><h2>Lisinopril</h2><p>10mg · With water</p></div></div><div class="time"><strong>12:30 PM</strong><span>in 4 hours</span></div></div><div class="pills"><span><span class="material-symbols-outlined">inventory_2</span><span class="stock">24 left</span></span><span><span class="material-symbols-outlined">repeat</span>Daily</span></div><div class="actions"><button class="take early"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Take early</span></button></div></article>
-          <article class="medicine-card compact" data-id="3" data-medicine="Vitamin D3"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon muted"><span class="material-symbols-outlined">wb_sunny</span></div><div><h2>Vitamin D3</h2><p>1000 IU · After lunch</p></div></div><div class="time"><strong>02:00 PM</strong><span>in 5 hours</span></div></div><div class="actions vitamin-action"><button class="take early"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Take early</span></button></div></article>
+          <article class="medicine-card compact" data-id="3" data-medicine="Vitamin D3"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon muted"><span class="material-symbols-outlined">wb_sunny</span></div><div><h2>Vitamin D3</h2><p>1000 IU · After lunch</p></div></div><div class="actions vitamin-action"><button class="take early"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Take early</span></button></div></article>
         </section>
+
+        <!-- Main Dynamic View Container (Schedule / Refills / Reports / Pharmacy / Settings) -->
         <section class="data-view" id="dataView" hidden aria-live="polite"></section>
       </main>
       <nav class="bottom-nav" aria-label="Mobile navigation"><button class="active" data-view="Today"><span class="material-symbols-outlined">medication</span>Today</button><button data-view="History"><span class="material-symbols-outlined">history</span>History</button><button data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button><button data-view="Settings"><span class="material-symbols-outlined">settings</span>Settings</button></nav>
     </div>
   </div>
+
+  <!-- Interactive Profile Picture Upload Modal (Camera & Gallery Options) -->
+  <div class="profile-pic-modal-overlay" id="profilePicModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="profile-pic-modal">
+      <button class="auth-modal-close" id="profilePicCloseBtn" aria-label="Close profile picture dialog">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="auth-modal-header" style="text-align:center;">
+        <div class="profile-modal-preview">
+          <div class="avatar-preview-box" id="avatarModalPreview">
+            <span class="material-symbols-outlined" id="avatarPreviewIcon">person</span>
+            <img id="avatarPreviewImg" alt="Avatar preview" style="display:none;">
+          </div>
+        </div>
+        <h2>Add Profile Picture</h2>
+        <p>Choose an option below to update your profile photo</p>
+      </div>
+
+      <div class="profile-options-grid">
+        <!-- Option 1: Camera (Live Camera Viewfinder + Input fallback) -->
+        <button type="button" class="profile-option-btn camera-opt" id="optCameraBtn">
+          <div class="profile-option-icon"><span class="material-symbols-outlined">photo_camera</span></div>
+          <div class="profile-option-info">
+            <strong>Camera</strong>
+            <small>Take a new photo with device camera</small>
+          </div>
+          <span class="material-symbols-outlined opt-arrow">arrow_forward</span>
+        </button>
+
+        <!-- Option 2: Gallery -->
+        <button type="button" class="profile-option-btn gallery-opt" id="optGalleryBtn">
+          <div class="profile-option-icon"><span class="material-symbols-outlined">photo_library</span></div>
+          <div class="profile-option-info">
+            <strong>Gallery</strong>
+            <small>Select from photos or device storage</small>
+          </div>
+          <span class="material-symbols-outlined opt-arrow">arrow_forward</span>
+        </button>
+      </div>
+
+      <!-- Hidden file inputs with appropriate HTML capture/accept attributes -->
+      <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" aria-hidden="true">
+      <input type="file" id="galleryInput" accept="image/*" style="display:none;" aria-hidden="true">
+
+      <div class="profile-modal-actions" id="profileModalActions" style="display:none;margin-top:16px;">
+        <button type="button" class="profile-remove-btn" id="removeAvatarBtn">
+          <span class="material-symbols-outlined">delete</span>
+          <span>Remove Photo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Viewfinder Modal (Used by Profile Photo & Reports File Upload) -->
+  <div class="camera-live-modal-overlay" id="cameraLiveModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="camera-live-modal">
+      <div class="camera-modal-header">
+        <h3 id="cameraModalTitle">Take Live Photo</h3>
+        <button type="button" class="auth-modal-close" id="closeLiveCameraBtn" aria-label="Close camera" style="position:static;color:#fff;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="camera-video-container">
+        <video id="cameraLiveFeed" class="camera-video-feed" autoplay playsinline muted></video>
+        <canvas id="cameraSnapshotCanvas" style="display:none;"></canvas>
+      </div>
+      <div class="camera-controls-bar">
+        <button type="button" class="btn-switch-cam" id="switchCameraFacingBtn" title="Switch Camera">
+          <span class="material-symbols-outlined">flip_camera_ios</span>
+        </button>
+        <button type="button" class="btn-snap-photo" id="snapLivePhotoBtn">
+          <span class="material-symbols-outlined">photo_camera</span>
+          <span>Capture Photo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Reports File Management -->
+  <input type="file" id="reportFileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;" aria-hidden="true">
+  <input type="file" id="reportCameraInput" accept="image/*" capture="environment" style="display:none;" aria-hidden="true">
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
