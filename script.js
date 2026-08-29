@@ -9,7 +9,7 @@ const medicineList = document.querySelector('.medicine-list');
 const progressCard = document.querySelector('.progress-card');
 let toastTimer;
 
-/* ── Global Orbit Capsule Buffer Controller (Requirement 4) ── */
+/* ── Global Orbit Capsule Buffer Controller ── */
 const globalLoader = document.getElementById('globalLoader');
 let loaderTimeout = null;
 
@@ -29,8 +29,7 @@ function hideLoader() {
 }
 
 /* ═══════════════════════════════════════════════
-   CarePill — Robust Offline / Static Data Provider
-   Enables 100% interactive Schedule, Refills, Reports & Dashboard on GitHub Pages & Local
+   CarePill — Robust Offline & Live Data Store
    ═══════════════════════════════════════════════ */
 const LOCAL_MEDS_KEY = 'carepill_local_medications';
 const LOCAL_DOSES_KEY = 'carepill_local_doses';
@@ -81,7 +80,8 @@ function getLocalMedications() {
       localStorage.setItem(LOCAL_MEDS_KEY, JSON.stringify(DEFAULT_MEDICATIONS));
       return DEFAULT_MEDICATIONS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_MEDICATIONS;
   } catch {
     return DEFAULT_MEDICATIONS;
   }
@@ -159,7 +159,7 @@ function getLocalWeeklyReports() {
     
     let taken = 0;
     meds.forEach(m => {
-      if (doses[`${m.id}_${dateStr}`] === 'taken' || (i > 0 && Math.random() > 0.3)) {
+      if (doses[`${m.id}_${dateStr}`] === 'taken' || (i > 0 && Math.random() > 0.35)) {
         taken++;
       }
     });
@@ -250,7 +250,7 @@ function addLocalMedication(newMed) {
   return entry;
 }
 
-/* ── Response cache (15s TTL) ── */
+/* ── Response cache ── */
 const apiCache = new Map();
 const CACHE_TTL = 15000;
 
@@ -269,9 +269,6 @@ function invalidateCache(url) {
   else apiCache.clear();
 }
 
-/* ── AbortController for in-flight requests ── */
-let activeController = null;
-
 function notify(message) {
   if (!toast) return;
   toast.textContent = message;
@@ -288,7 +285,7 @@ function escapeHtml(text) {
 }
 
 /* ═══════════════════════════════════════════════
-   Click-to-Edit User Profile Name (Requirement 5)
+   Click-to-Edit User Profile Name
    ═══════════════════════════════════════════════ */
 const USER_NAME_KEY = 'carepill_user_name';
 
@@ -363,7 +360,7 @@ function initEditableName() {
 }
 
 /* ═══════════════════════════════════════════════
-   Live Camera Viewfinder & Profile Photo (Requirement 2)
+   Live Camera Viewfinder & Profile Photo
    ═══════════════════════════════════════════════ */
 let activeCameraStream = null;
 let currentCameraFacing = 'user';
@@ -641,7 +638,7 @@ function bindProfilePictureEvents() {
 }
 
 /* ═══════════════════════════════════════════════
-   Reports Section: File Management & Search (Requirement 3)
+   Reports Section: File Management & Search
    ═══════════════════════════════════════════════ */
 const REPORTS_FILES_KEY = 'carepill_saved_reports_files';
 
@@ -658,7 +655,8 @@ function getSavedReportFiles() {
       localStorage.setItem(REPORTS_FILES_KEY, JSON.stringify(DEFAULT_SAMPLE_FILES));
       return DEFAULT_SAMPLE_FILES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_SAMPLE_FILES;
   } catch {
     return DEFAULT_SAMPLE_FILES;
   }
@@ -929,33 +927,6 @@ function bindMedicineCardActions() {
   });
 }
 
-async function getJson(url) {
-  const cached = getCached(url);
-  if (cached) return cached;
-
-  if (activeController) activeController.abort();
-  activeController = new AbortController();
-
-  try {
-    const response = await fetch(url, { signal: activeController.signal });
-    if (response.ok) {
-      const data = await response.json();
-      setCache(url, data);
-      return data;
-    }
-  } catch (err) {
-    if (err.name === 'AbortError') throw err;
-  }
-
-  // Graceful fallback for static deployment (GitHub Pages, Vercel, etc.)
-  if (url.includes('/api/dashboard')) return getLocalDashboard();
-  if (url.includes('/api/schedule')) return getLocalSchedule();
-  if (url.includes('/api/refills')) return getLocalRefills();
-  if (url.includes('/api/reports/weekly')) return getLocalWeeklyReports();
-
-  throw new Error('Could not load data.');
-}
-
 async function requestDose(card, action) {
   const id = card.dataset.id;
   try {
@@ -977,13 +948,15 @@ async function requestDose(card, action) {
 
 async function loadDashboard() {
   try {
-    const data = await getJson('/api/dashboard');
-    renderDashboard(data);
-  } catch {
-    renderDashboard(getLocalDashboard());
-  } finally {
-    hideLoader();
-  }
+    const response = await fetch('/api/dashboard');
+    if (response.ok) {
+      const data = await response.json();
+      renderDashboard(data);
+      return;
+    }
+  } catch {}
+
+  renderDashboard(getLocalDashboard());
 }
 
 /* ── Auto-refresh dashboard every 30s ── */
@@ -991,7 +964,6 @@ let refreshInterval = null;
 function startAutoRefresh() {
   stopAutoRefresh();
   refreshInterval = setInterval(() => {
-    invalidateCache('/api/dashboard');
     loadDashboard();
   }, 30000);
 }
@@ -1002,8 +974,7 @@ function stopAutoRefresh() {
   }
 }
 
-/* ── View Router (Strict Isolation - Requirement 1) ── */
-let viewDebounceTimer = null;
+/* ── View Router (Strict Isolation) ── */
 let currentView = 'Today';
 
 function showToday() {
@@ -1018,15 +989,17 @@ function showToday() {
   document.querySelector('h1').textContent = "Today's Schedule";
   document.querySelector('.date').textContent = 'Your medication plan for today';
 
+  renderDashboard(getLocalDashboard());
   loadDashboard();
   startAutoRefresh();
 }
 
 function showSchedule(data) {
+  const scheduleData = data || getLocalSchedule();
   document.querySelector('h1').textContent = 'Medication Schedule';
   document.querySelector('.date').textContent = 'All doses planned for today';
 
-  const rows = data.medications.map(m => `
+  const rows = scheduleData.medications.map(m => `
     <div class="data-row">
       <div>
         <strong>${escapeHtml(m.scheduled_time)} · ${escapeHtml(m.name)}</strong>
@@ -1042,7 +1015,7 @@ function showSchedule(data) {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
           <h2>Today's doses</h2>
-          <p style="margin:0;color:var(--muted);font-size:13px;">${data.medications.length} medications scheduled</p>
+          <p style="margin:0;color:var(--muted);font-size:13px;">${scheduleData.medications.length} medications scheduled</p>
         </div>
         <button class="new-schedule-btn" onclick="openScheduleModal()" style="font-size:12.5px;padding:8px 14px;">
           <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
@@ -1055,10 +1028,11 @@ function showSchedule(data) {
 }
 
 function showRefills(data) {
+  const refillData = data || getLocalRefills();
   document.querySelector('h1').textContent = 'Refills';
-  document.querySelector('.date').textContent = `Refill reminder at ${data.threshold} doses or fewer`;
+  document.querySelector('.date').textContent = `Refill reminder at ${refillData.threshold || 15} doses or fewer`;
 
-  const rows = data.medications.map(m => `
+  const rows = refillData.medications.map(m => `
     <div class="data-row">
       <div>
         <strong>${escapeHtml(m.name)}</strong>
@@ -1101,10 +1075,11 @@ function showRefills(data) {
 }
 
 function showReports(data) {
-  const meds = data.patient_medicines;
-  const adherence = Math.round(meds.reduce((sum, medicine) => sum + medicine.adherence, 0) / meds.length);
+  const reportData = data || getLocalWeeklyReports();
+  const meds = reportData.patient_medicines || [];
+  const adherence = meds.length ? Math.round(meds.reduce((sum, medicine) => sum + (medicine.adherence || 0), 0) / meds.length) : 100;
   const lowStock = meds.filter(medicine => medicine.low_stock).length;
-  const days = data.days.map(day => {
+  const days = (reportData.days || []).map(day => {
     const ratio = day.scheduled ? day.taken / day.scheduled : 0;
     const state = ratio === 1 ? 'full' : ratio >= 0.5 ? 'mid' : '';
     const icon = ratio === 1 ? '✅' : ratio >= 0.5 ? '⚠️' : '❌';
@@ -1139,7 +1114,7 @@ function showReports(data) {
   document.querySelector('.date').textContent = 'Active medication plan & medical document repository';
 
   dataView.innerHTML = `
-    <!-- Reports File Management & Search (Requirement 3) -->
+    <!-- Reports File Management & Search -->
     <article class="data-card reports-files-section">
       <div class="section-title">
         <h2>📁 Prescriptions &amp; Lab Reports</h2>
@@ -1195,8 +1170,8 @@ function showReports(data) {
         </div>
         <div class="ma-stat-grid">
           <div class="ma-stat"><strong>${meds.length}</strong><span>Total Medicines</span></div>
-          <div class="ma-stat ok"><strong>${data.taken}</strong><span>Taken Today</span></div>
-          <div class="ma-stat"><strong>${Math.max(0, data.scheduled - data.taken)}</strong><span>Unrecorded Doses</span></div>
+          <div class="ma-stat ok"><strong>${reportData.taken || 0}</strong><span>Taken Today</span></div>
+          <div class="ma-stat"><strong>${Math.max(0, (reportData.scheduled || (meds.length * 7)) - (reportData.taken || 0))}</strong><span>Unrecorded Doses</span></div>
           <div class="ma-stat warn"><strong>${lowStock}</strong><span>Low Stock</span></div>
         </div>
       </section>
@@ -1384,65 +1359,72 @@ function bindLocateWidget() {
   });
 }
 
-async function selectView(view) {
-  clearTimeout(viewDebounceTimer);
-  viewDebounceTimer = setTimeout(async () => {
-    currentView = view;
-    stopAutoRefresh();
+function selectView(view) {
+  currentView = view;
+  stopAutoRefresh();
 
-    document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item.dataset.view === view));
-    const viewNameEl = document.querySelector('#viewName');
-    if (viewNameEl) {
-      viewNameEl.textContent = (view === 'Today' || view === 'Dashboard') ? 'YOUR HEALTH, ON TRACK' : view.toUpperCase();
-    }
+  document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item.dataset.view === view));
+  const viewNameEl = document.querySelector('#viewName');
+  if (viewNameEl) {
+    viewNameEl.textContent = (view === 'Today' || view === 'Dashboard') ? 'YOUR HEALTH, ON TRACK' : view.toUpperCase();
+  }
 
-    const pageHeadingRight = document.querySelector('.page-heading-right');
+  const pageHeadingRight = document.querySelector('.page-heading-right');
 
-    if (view === 'Today' || view === 'Dashboard') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return showToday();
-    }
-
-    if (pageHeadingRight) pageHeadingRight.style.display = 'none';
-    if (medicineList) medicineList.hidden = true;
-    if (progressCard) progressCard.hidden = true;
-    if (dataView) dataView.hidden = false;
-
+  if (view === 'Today' || view === 'Dashboard') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    return showToday();
+  }
 
-    if (view === 'Settings') return showSettings();
-    if (view === 'Pharmacy') return showPharmacy();
+  if (pageHeadingRight) pageHeadingRight.style.display = 'none';
+  if (medicineList) medicineList.hidden = true;
+  if (progressCard) progressCard.hidden = true;
+  if (dataView) dataView.hidden = false;
 
-    if (view === 'History') {
-      document.querySelector('h1').textContent = 'Medication History';
-      document.querySelector('.date').textContent = 'Your complete medication intake records';
-      dataView.innerHTML = `
-        <article class="data-card">
-          <h2>📋 Medication History</h2>
-          <p>Your complete medication intake logs and timestamps are stored securely in your CarePill account.</p>
-        </article>
-      `;
-      return;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (view === 'Settings') return showSettings();
+  if (view === 'Pharmacy') return showPharmacy();
+
+  if (view === 'History') {
+    document.querySelector('h1').textContent = 'Medication History';
+    document.querySelector('.date').textContent = 'Your complete medication intake records';
+    dataView.innerHTML = `
+      <article class="data-card">
+        <h2>📋 Medication History</h2>
+        <p>Your complete medication intake logs and timestamps are stored securely in your CarePill account.</p>
+      </article>
+    `;
+    return;
+  }
+
+  if (!['Schedule', 'Refills', 'Reports'].includes(view)) {
+    return notify(`${view} view loaded.`);
+  }
+
+  // 1. Immediately render guaranteed data in 0ms (Never shows "Could not load data")
+  if (view === 'Schedule') {
+    showSchedule(getLocalSchedule());
+  } else if (view === 'Refills') {
+    showRefills(getLocalRefills());
+  } else if (view === 'Reports') {
+    showReports(getLocalWeeklyReports());
+  }
+
+  // 2. Fetch from backend if online server is running
+  const url = view === 'Reports' ? '/api/reports/weekly' : `/api/${view.toLowerCase()}`;
+  fetch(url).then(res => {
+    if (res.ok) return res.json();
+    throw new Error('Fallback');
+  }).then(data => {
+    if (currentView === view) {
+      if (view === 'Schedule') showSchedule(data);
+      else if (view === 'Refills') showRefills(data);
+      else if (view === 'Reports') showReports(data);
     }
-
-    if (!['Schedule', 'Refills', 'Reports'].includes(view)) {
-      return notify(`${view} view loaded.`);
-    }
-
-    showLoader();
-    dataView.innerHTML = '<article class="data-card">Loading…</article>';
-
-    try {
-      const data = await getJson(view === 'Reports' ? '/api/reports/weekly' : `/api/${view.toLowerCase()}`);
-      ({ Schedule: showSchedule, Refills: showRefills, Reports: showReports })[view](data);
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        dataView.innerHTML = `<article class="data-card">${escapeHtml(error.message)}</article>`;
-      }
-    } finally {
-      hideLoader();
-    }
-  }, 80);
+  }).catch(() => {
+    // Graceful fallback already rendered
+  });
 }
 
 function openScheduleModal() {
@@ -1473,8 +1455,8 @@ async function handleScheduleSubmit(e) {
   const succEl = document.getElementById('schedSuccess');
   const succText = document.getElementById('schedSuccessText');
 
-  errEl.classList.remove('visible');
-  succEl.classList.remove('visible');
+  if (errEl) errEl.classList.remove('visible');
+  if (succEl) succEl.classList.remove('visible');
 
   const medName = document.getElementById('schedMedName').value.trim();
   const dosage = document.getElementById('schedDosage').value.trim();
@@ -1514,12 +1496,10 @@ async function handleScheduleSubmit(e) {
       addLocalMedication(payload);
     }
 
-    succText.textContent = `✨ Schedule for "${medName}" saved with Doctor's prescription!`;
-    succEl.classList.add('visible');
-
-    invalidateCache('/api/dashboard');
-    invalidateCache('/api/schedule');
-    invalidateCache('/api/refills');
+    if (succText && succEl) {
+      succText.textContent = `✨ Schedule for "${medName}" saved with Doctor's prescription!`;
+      succEl.classList.add('visible');
+    }
 
     setTimeout(() => {
       closeScheduleModal();
@@ -1529,8 +1509,10 @@ async function handleScheduleSubmit(e) {
     }, 700);
 
   } catch (err) {
-    errText.textContent = err.message || 'Failed to save schedule.';
-    errEl.classList.add('visible');
+    if (errText && errEl) {
+      errText.textContent = err.message || 'Failed to save schedule.';
+      errEl.classList.add('visible');
+    }
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<span class="material-symbols-outlined">add_task</span> Save Medication Schedule`;
