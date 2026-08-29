@@ -40,7 +40,17 @@ else:
 JWT_SECRET = os.environ.get("CAREPILL_SECRET", secrets.token_hex(32))
 TOKEN_EXPIRY_DAYS = 7
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="CarePill API", version="2.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
@@ -424,4 +434,18 @@ def add_sos_contact(contact: SOSContact, request: Request) -> dict:
 
 @app.get("/")
 def home() -> FileResponse:
-    return FileResponse(FRONTEND_DIR / "index.html")
+    target = FRONTEND_DIR / "index.html"
+    if not target.exists():
+        target = Path("index.html")
+    return FileResponse(target)
+
+
+@app.get("/{file_path:path}")
+def serve_static_or_spa(file_path: str):
+    p1 = FRONTEND_DIR / file_path
+    if p1.exists() and p1.is_file():
+        return FileResponse(p1)
+    p2 = Path(file_path)
+    if p2.exists() and p2.is_file():
+        return FileResponse(p2)
+    return home()
