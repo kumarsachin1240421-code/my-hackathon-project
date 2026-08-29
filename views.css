@@ -1,0 +1,690 @@
+/* ═══════════════════════════════════════════════
+   CarePill — Views, Schedule & Alarm Component Styles
+   ═══════════════════════════════════════════════ */
+
+.data-view {
+  display: grid;
+  gap: 24px;
+}
+
+.data-card {
+  padding: 26px;
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow: var(--raised);
+}
+
+.data-card h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.data-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.data-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  box-shadow: var(--inset);
+}
+
+.data-row strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.data-row small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #d8eaf6;
+  color: var(--blue);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-pill.warning {
+  background: var(--soft-red);
+  color: var(--red);
+}
+
+/* ── Heading Actions & New Schedule Button ── */
+.page-heading-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.new-schedule-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d9e71, #0aa67e);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(13, 158, 113, 0.35), -2px -2px 8px var(--light);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+}
+
+.new-schedule-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(13, 158, 113, 0.45), -3px -3px 10px var(--light);
+}
+
+.new-schedule-btn:active {
+  transform: translateY(0);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.new-schedule-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* ── Schedule Creation Modal ── */
+.schedule-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 38, 56, 0.48);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 350;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.schedule-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.schedule-modal {
+  background: var(--bg);
+  border-radius: 26px;
+  box-shadow: 16px 16px 40px rgba(163, 177, 198, 0.7), -16px -16px 40px var(--light);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  padding: 34px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.schedule-modal-overlay.active .schedule-modal {
+  transform: translateY(0) scale(1);
+}
+
+.sched-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sched-textarea,
+.sched-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.sched-textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.sched-textarea:focus,
+.sched-select:focus {
+  box-shadow: var(--inset), 0 0 0 2px var(--teal);
+}
+
+.sched-icon-row {
+  margin: 10px 0 16px;
+}
+
+.sched-icon-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.sched-icons-picker {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-radio {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.45), -4px -4px 10px var(--light);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-radio input {
+  display: none;
+}
+
+.icon-radio.active {
+  box-shadow: var(--inset);
+  color: var(--teal);
+}
+
+.icon-radio .material-symbols-outlined {
+  font-size: 22px;
+}
+
+/* ── CarePill Alarm Banner ── */
+.carepill-alarm-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 600;
+  background: linear-gradient(135deg, #0d9e71, #0870b7);
+  color: #fff;
+  box-shadow: 0 8px 30px rgba(13, 158, 113, 0.45);
+  transform: translateY(-100%);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 16px 28px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.carepill-alarm-banner.visible {
+  transform: translateY(0);
+}
+
+.alarm-banner-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.alarm-banner-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.alarm-bell-pulse {
+  font-size: 28px;
+  animation: bellRing 1s ease-in-out infinite alternate;
+}
+
+@keyframes bellRing {
+  0% { transform: rotate(-15deg) scale(1); }
+  100% { transform: rotate(15deg) scale(1.1); }
+}
+
+.alarm-banner-content {
+  flex: 1;
+  min-width: 240px;
+}
+
+.alarm-banner-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.alarm-banner-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  display: block;
+}
+
+.alarm-banner-sub {
+  font-size: 13px;
+  margin: 2px 0 0;
+  opacity: 0.95;
+}
+
+.alarm-banner-rx {
+  font-size: 12px;
+  margin: 4px 0 0;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.alarm-banner-rx .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.alarm-banner-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.alarm-btn-take,
+.alarm-btn-snooze,
+.alarm-btn-dismiss {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.alarm-btn-take {
+  background: #ffffff;
+  color: #0d9e71;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.alarm-btn-take:hover {
+  transform: translateY(-1px);
+}
+
+.alarm-btn-snooze {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.alarm-btn-snooze:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.alarm-btn-dismiss {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 8px 12px;
+}
+
+.alarm-btn-dismiss:hover {
+  color: #ffffff;
+}
+
+/* ── Alarm & Sound Settings in Settings View ── */
+.alarm-settings-card {
+  margin-bottom: 20px;
+}
+
+.alarm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 14px;
+  box-shadow: var(--inset);
+  margin-bottom: 18px;
+}
+
+.neumorphic-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.neumorphic-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.neumorphic-switch .slider {
+  position: absolute;
+  inset: 0;
+  background: var(--shade);
+  border-radius: 20px;
+  transition: background 0.25s ease;
+  box-shadow: var(--inset);
+}
+
+.neumorphic-switch input:checked + .slider {
+  background: var(--teal);
+}
+
+.neumorphic-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.neumorphic-switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.alarm-tones-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.alarm-tone-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--bg);
+  box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.4), -4px -4px 10px var(--light);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alarm-tone-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 14px rgba(163, 177, 198, 0.5), -6px -6px 14px var(--light);
+}
+
+.alarm-tone-card.active {
+  box-shadow: var(--inset);
+  border-color: rgba(13, 158, 113, 0.4);
+}
+
+.alarm-tone-icon {
+  font-size: 22px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
+
+.alarm-tone-info {
+  flex: 1;
+}
+
+.alarm-tone-info strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.alarm-tone-info small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.alarm-tone-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alarm-preview-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 3px 3px 7px rgba(163, 177, 198, 0.5), -3px -3px 7px var(--light);
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  transition: all 0.2s ease;
+}
+
+.alarm-preview-btn:hover {
+  transform: scale(1.08);
+}
+
+.alarm-preview-btn:active {
+  box-shadow: var(--inset);
+}
+
+.alarm-radio-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--shade);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: all 0.2s ease;
+}
+
+.alarm-radio-check.checked {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.alarm-radio-check .material-symbols-outlined {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alarm-test-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════
+   Nearby Medical Shops Widget (from pasted code)
+   ═══════════════════════════════════════════════ */
+.locate-card {
+  width: 100%;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  border-radius: 24px;
+  padding: 26px 24px;
+  margin-top: 20px;
+}
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.section-title h2 {
+  font-family: 'Fraunces', serif, 'Inter';
+  font-weight: 600;
+  font-size: 19px;
+  margin: 0;
+}
+
+.section-title span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.locate-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0 18px;
+  line-height: 1.55;
+}
+
+.locate-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.locate-btn {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--blue);
+  background: var(--bg);
+  box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.45), -4px -4px 10px var(--light);
+  border: none;
+  border-radius: 100px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.locate-btn:hover {
+  transform: translateY(-1px);
+}
+
+.locate-btn:active {
+  box-shadow: var(--inset);
+  transform: translateY(0);
+}
+
+.locate-btn.secondary {
+  color: var(--muted);
+}
+
+.locate-or {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.locate-input {
+  flex: 1;
+  min-width: 160px;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--bg);
+  box-shadow: var(--inset);
+  border: none;
+  border-radius: 100px;
+  padding: 12px 18px;
+  outline: none;
+}
+
+.locate-input::placeholder {
+  color: #9aa8ba;
+}
+
+.locate-input:focus {
+  box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6), inset -6px -6px 12px var(--light), 0 0 0 2px var(--blue);
+}
+
+.refill-shortcut {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.refill-shortcut .chip {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9821f;
+  background: #f7ecd9;
+  padding: 6px 13px;
+  border-radius: 100px;
+  cursor: pointer;
+  border: none;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  transition: transform 0.15s ease;
+}
+
+.refill-shortcut .chip:hover {
+  transform: scale(1.04);
+}
+
+.locate-status {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 14px;
+  min-height: 16px;
+}
+
+.locate-status.err {
+  color: var(--red);
+}
+
+@media (max-width: 600px) {
+  .sched-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-heading-right {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .alarm-banner-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .alarm-banner-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

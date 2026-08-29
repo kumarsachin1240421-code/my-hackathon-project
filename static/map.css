@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════
+   CarePill — Nearby Pharmacy Map Styles
+   ═══════════════════════════════════════════════ */
+
+.pharmacy-view {
+  display: grid;
+  grid-template-rows: 340px auto;
+  gap: 20px;
+}
+
+.pharmacy-map-container {
+  border-radius: 20px;
+  box-shadow: var(--raised);
+  overflow: hidden;
+  position: relative;
+  min-height: 300px;
+}
+
+.pharmacy-map-container #pharmacyMap {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  z-index: 1;
+}
+
+/* Override Leaflet tile layer border radius */
+.pharmacy-map-container .leaflet-container {
+  border-radius: 20px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.pharmacy-map-container .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.12);
+}
+
+.pharmacy-map-container .leaflet-popup-content {
+  margin: 12px 16px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* ── Pharmacy list ── */
+.pharmacy-list {
+  display: grid;
+  gap: 14px;
+}
+
+.pharmacy-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  box-shadow: var(--raised);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pharmacy-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 10px 10px 24px var(--shade), -10px -10px 24px var(--light);
+}
+
+.pharmacy-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d9e71, #14b884);
+  box-shadow: 3px 3px 8px rgba(13, 158, 113, 0.25);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.pharmacy-icon .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.pharmacy-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pharmacy-info h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pharmacy-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.pharmacy-distance {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pharmacy-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.pharmacy-status.open {
+  background: #e3f2ea;
+  color: #0d9e71;
+}
+
+.pharmacy-status.closed {
+  background: var(--soft-red);
+  color: var(--red);
+}
+
+.pharmacy-status.unknown {
+  background: #f0edd8;
+  color: #b08d2f;
+}
+
+.pharmacy-navigate {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: box-shadow 0.2s;
+}
+
+.pharmacy-navigate:active {
+  box-shadow: var(--inset);
+}
+
+.pharmacy-navigate .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* ── Loading state ── */
+.pharmacy-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.pharmacy-loading .spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--shade);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .pharmacy-view {
+    grid-template-rows: 240px auto;
+  }
+
+  .pharmacy-card {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .pharmacy-navigate {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+}
