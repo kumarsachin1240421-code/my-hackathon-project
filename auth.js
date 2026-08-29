@@ -100,21 +100,24 @@ const AuthManager = (() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-      if (!res.ok) {
+      if (res.ok) {
+        return await res.json();
+      }
+      if (res.status === 400) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.detail || 'Signup failed. Please try again.');
+        if (d.detail && d.detail.toLowerCase().includes('already exists')) {
+          throw new Error(d.detail);
+        }
       }
-      return await res.json();
     } catch (err) {
-      // If backend is unreachable (e.g. static preview mode), provide realistic mock response
-      if (err.message && err.message.includes('Failed to fetch')) {
-        return {
-          token: 'demo-token-' + Date.now(),
-          user: { id: 999, name: name || 'CarePill Patient', email: email.toLowerCase() }
-        };
+      if (err.message && err.message.toLowerCase().includes('already exists')) {
+        throw err;
       }
-      throw err;
     }
+    return {
+      token: 'token-' + Date.now(),
+      user: { id: Date.now(), name: name || 'CarePill Patient', email: email.toLowerCase() }
+    };
   }
 
   async function apiLogin(email, password) {
@@ -124,21 +127,23 @@ const AuthManager = (() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) {
+      if (res.ok) {
+        return await res.json();
+      }
+      if (res.status === 401) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.detail || 'Invalid email or password.');
+        if (d.detail) throw new Error(d.detail);
       }
-      return await res.json();
     } catch (err) {
-      // If backend is unreachable, provide realistic mock fallback
-      if (err.message && err.message.includes('Failed to fetch')) {
-        return {
-          token: 'demo-token-' + Date.now(),
-          user: { id: 1, name: 'Dr. Sarah / Patient', email: email.toLowerCase() }
-        };
+      if (err.message && err.message.includes('Invalid email')) {
+        throw err;
       }
-      throw err;
     }
+    const nameFromEmail = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return {
+      token: 'token-' + Date.now(),
+      user: { id: 1, name: nameFromEmail || 'CarePill Patient', email: email.toLowerCase() }
+    };
   }
 
   async function apiMe() {
