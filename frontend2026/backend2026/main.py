@@ -23,14 +23,27 @@ from pydantic import BaseModel, Field, EmailStr
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent
-DATABASE_PATH = BASE_DIR / "carepill.db"
+
+if os.environ.get("VERCEL"):
+    DATABASE_PATH = Path("/tmp/carepill.db")
+    seed_db = BASE_DIR / "carepill.db"
+    if seed_db.exists() and not DATABASE_PATH.exists():
+        try:
+            import shutil
+            shutil.copy2(seed_db, DATABASE_PATH)
+        except Exception:
+            pass
+else:
+    DATABASE_PATH = BASE_DIR / "carepill.db"
 
 # JWT-like token secret (auto-generated per server instance, or set via env)
 JWT_SECRET = os.environ.get("CAREPILL_SECRET", secrets.token_hex(32))
 TOKEN_EXPIRY_DAYS = 7
 
 app = FastAPI(title="CarePill API", version="2.0.0")
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 # ─── Database Connection Pool ───────────────────────────────────────────────
@@ -39,7 +52,8 @@ app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 def database():
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA journal_mode=WAL")  # Better concurrent performance
+    if not os.environ.get("VERCEL"):
+        connection.execute("PRAGMA journal_mode=WAL")  # Better concurrent performance locally
     connection.execute("PRAGMA busy_timeout=5000")
     try:
         yield connection
