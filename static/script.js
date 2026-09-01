@@ -250,6 +250,63 @@ function addLocalMedication(newMed) {
   return entry;
 }
 
+function deleteLocalMedication(medId) {
+  const numId = Number(medId);
+  const meds = getLocalMedications();
+  const deletedMed = meds.find(m => m.id === numId || m.id === medId);
+  const updatedMeds = meds.filter(m => m.id !== numId && m.id !== medId);
+  saveLocalMedications(updatedMeds);
+
+  try {
+    const doses = getLocalDoses();
+    Object.keys(doses).forEach(key => {
+      if (key.startsWith(`${medId}_`) || key.startsWith(`${numId}_`)) {
+        delete doses[key];
+      }
+    });
+    saveLocalDoses(doses);
+  } catch {}
+
+  invalidateCache('/api/dashboard');
+  invalidateCache('/api/schedule');
+  invalidateCache('/api/refills');
+  invalidateCache('/api/reports/weekly');
+
+  return deletedMed;
+}
+
+async function deleteScheduleItem(medId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  const row = event && event.target ? event.target.closest('.data-row') : document.querySelector(`.data-row[data-id="${medId}"]`);
+  
+  if (row) {
+    row.classList.add('collapsing');
+  }
+
+  // Smooth transition duration (320ms) so lower schedules smoothly move up to fill empty space
+  await new Promise(resolve => setTimeout(resolve, 320));
+
+  try {
+    await fetch(`/api/medications/${medId}`, { method: 'DELETE' });
+  } catch {}
+
+  const deletedMed = deleteLocalMedication(medId);
+  const medName = deletedMed ? deletedMed.name : 'Medication';
+
+  notify(`🗑️ "${medName}" removed from schedule.`);
+
+  if (currentView === 'Schedule') {
+    showSchedule(getLocalSchedule());
+  } else if (currentView === 'Today' || currentView === 'Dashboard') {
+    renderDashboard(getLocalDashboard());
+  }
+}
+window.deleteScheduleItem = deleteScheduleItem;
+
 /* ── Response cache ── */
 const apiCache = new Map();
 const CACHE_TTL = 15000;
@@ -913,16 +970,23 @@ function bindMedicineCardActions() {
   document.querySelectorAll('.dismiss').forEach(button => {
     button.addEventListener('click', async () => {
       const card = button.closest('.medicine-card');
+      const medName = card.dataset.medicine || 'Medicine';
+      
+      // Trigger smooth upward collapse so lower cards glide up
+      card.classList.add('collapsing');
       showLoader();
-      try {
-        const result = await requestDose(card, 'dismissed');
-        renderDashboard(result.dashboard);
-        notify(`${card.dataset.medicine} dismissed for today.`);
-      } catch (error) {
-        notify(error.message);
-      } finally {
-        hideLoader();
-      }
+
+      setTimeout(async () => {
+        try {
+          const result = await requestDose(card, 'dismissed');
+          renderDashboard(result.dashboard);
+          notify(`ℹ️ ${medName} dismissed for today.`);
+        } catch (error) {
+          notify(error.message);
+        } finally {
+          hideLoader();
+        }
+      }, 320);
     });
   });
 }
@@ -999,23 +1063,40 @@ function showSchedule(data) {
   document.querySelector('h1').textContent = 'Medication Schedule';
   document.querySelector('.date').textContent = 'All doses planned for today';
 
-  const rows = scheduleData.medications.map(m => `
-    <div class="data-row">
+  const hasMeds = scheduleData.medications && scheduleData.medications.length > 0;
+
+  const rows = hasMeds ? scheduleData.medications.map(m => `
+    <div class="data-row" data-id="${m.id}">
       <div>
         <strong>${escapeHtml(m.scheduled_time)} · ${escapeHtml(m.name)}</strong>
         <small>${escapeHtml(m.dosage)} · ${escapeHtml(m.instructions || 'As prescribed')}</small>
         ${m.doctor_prescription ? `<small style="color:var(--teal);margin-top:2px;">👨‍⚕️ ${escapeHtml(m.doctor_prescription)}</small>` : ''}
       </div>
-      <span class="status-pill ${m.status === 'dismissed' ? 'warning' : ''}">${escapeHtml(m.status)}</span>
+      <div class="schedule-row-actions">
+        <span class="status-pill ${m.status === 'dismissed' ? 'warning' : ''}">${escapeHtml(m.status)}</span>
+        <button type="button" class="delete-schedule-btn" onclick="deleteScheduleItem(${m.id}, event)" title="Remove from schedule" aria-label="Delete schedule ${escapeHtml(m.name)}">
+          <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+        </button>
+      </div>
     </div>
-  `).join('');
+  `).join('') : `
+    <div class="schedule-empty-state">
+      <span class="material-symbols-outlined" style="font-size:36px;color:var(--teal);margin-bottom:8px;display:block;">event_available</span>
+      <strong style="color:var(--ink);display:block;margin-bottom:4px;">No medications scheduled</strong>
+      <p style="margin:0 0 14px;color:var(--muted);font-size:13px;">Add your first medication schedule to get automated dosage reminders.</p>
+      <button class="new-schedule-btn" onclick="openScheduleModal()" style="font-size:12.5px;padding:8px 16px;display:inline-flex;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
+        <span>Add Schedule</span>
+      </button>
+    </div>
+  `;
 
   dataView.innerHTML = `
     <article class="data-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
           <h2>Today's doses</h2>
-          <p style="margin:0;color:var(--muted);font-size:13px;">${scheduleData.medications.length} medications scheduled</p>
+          <p style="margin:0;color:var(--muted);font-size:13px;">${scheduleData.medications.length} medication${scheduleData.medications.length === 1 ? '' : 's'} scheduled</p>
         </div>
         <button class="new-schedule-btn" onclick="openScheduleModal()" style="font-size:12.5px;padding:8px 14px;">
           <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>

@@ -28,7 +28,7 @@
   box-shadow: 12px 12px 30px var(--shade), -12px -12px 30px var(--light);
   padding: 32px 28px;
   width: 90%;
-  max-width: 440px;
+  max-width: 460px;
   text-align: center;
   transform: scale(0.95);
   transition: transform 0.25s;
@@ -67,52 +67,97 @@
   font-size: 22px;
   color: var(--red);
   font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .sos-modal p {
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   color: var(--muted);
   font-size: 14px;
+  line-height: 1.45;
 }
 
 /* ── Countdown ── */
 .sos-countdown {
-  font-size: 48px;
+  font-size: 52px;
   font-weight: 800;
   color: var(--red);
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-family: Manrope, sans-serif;
+}
+
+/* ── SOS Dispatch Summary ── */
+.sos-dispatch-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.sos-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: var(--inset);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.sos-summary-item .material-symbols-outlined {
+  font-size: 18px;
+  color: var(--blue);
+}
+
+.sos-summary-item.hospital-skipped {
+  color: var(--muted);
+}
+.sos-summary-item.hospital-skipped .material-symbols-outlined {
+  color: var(--muted);
+}
+.sos-summary-item.hospital-included {
+  color: #0d9e71;
+  font-weight: 600;
+}
+.sos-summary-item.hospital-included .material-symbols-outlined {
+  color: #0d9e71;
 }
 
 /* ── Buttons ── */
 .sos-actions {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   justify-content: center;
 }
 
 .sos-confirm {
-  padding: 14px 28px;
+  flex: 1;
+  padding: 14px 20px;
   border-radius: 14px;
   background: linear-gradient(135deg, #c94346, #e05672);
   color: #fff;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14.5px;
   border: none;
   cursor: pointer;
   box-shadow: 4px 4px 12px rgba(201, 67, 70, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   transition: transform 0.15s;
 }
 
 .sos-confirm:hover { transform: translateY(-1px); }
 
 .sos-cancel {
-  padding: 14px 28px;
+  padding: 14px 22px;
   border-radius: 14px;
   background: var(--bg);
   color: var(--muted);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14.5px;
   border: none;
   cursor: pointer;
   box-shadow: var(--raised);
@@ -124,46 +169,177 @@
 /* ── Contact Status List ── */
 .sos-status-list {
   text-align: left;
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sos-contact-status {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 11px 13px;
   border-radius: 12px;
   box-shadow: var(--inset);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
-.sos-contact-status .name { font-weight: 700; }
+.sos-contact-status .name { font-weight: 700; color: var(--ink); }
 .sos-contact-status .status { font-size: 12px; color: var(--muted); }
 .sos-contact-status .status.sent { color: #0d9e71; font-weight: 700; }
 .sos-contact-status .status.failed { color: var(--red); font-weight: 700; }
-.sos-contact-status .status.sending { color: var(--blue); }
+.sos-contact-status .status.sending { color: var(--blue); font-weight: 600; }
+.sos-contact-status .status.muted-skip { color: var(--muted); font-style: italic; }
+.sos-contact-status .status.warning { color: #d97706; font-weight: 600; }
+
+/* ── 1-Tap SOS Quick Action Buttons ── */
+.sos-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--raised);
+  background: var(--bg);
+  color: var(--ink);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.sos-action-btn:hover {
+  transform: translateY(-1px);
+}
+.sos-action-btn:active {
+  box-shadow: var(--inset);
+  transform: translateY(0);
+}
+
+.sos-action-btn.call {
+  color: #c94346;
+  background: #fdf2f2;
+}
+.sos-action-btn.wa {
+  color: #0d9e71;
+  background: #f0fdf4;
+}
+.sos-action-btn.sms {
+  color: var(--blue);
+  background: #f0f7ff;
+}
+.sos-action-btn.map {
+  color: #4b5563;
+  background: #f9fafb;
+}
 
 /* ── SOS Settings (in Settings view) ── */
-.sos-settings {
+.sos-settings-card {
+  position: relative;
+}
+
+.sos-settings-header {
+  margin-bottom: 20px;
+}
+
+.sos-settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.sos-settings-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.sos-counter-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #d8eaf6;
+  color: var(--blue);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.sos-contacts-list {
   display: grid;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 10px;
 }
 
 .sos-contact-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px 16px;
   border-radius: 14px;
   box-shadow: var(--raised);
+  background: var(--bg);
 }
 
-.sos-contact-card .info { display: grid; gap: 2px; }
-.sos-contact-card .info strong { font-size: 14px; }
-.sos-contact-card .info small { color: var(--muted); font-size: 12px; }
+.sos-contact-card.primary-contact {
+  border-left: 4px solid var(--blue);
+}
+
+.sos-contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  box-shadow: var(--inset);
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  flex: none;
+}
+
+.sos-contact-avatar .material-symbols-outlined {
+  font-size: 22px;
+}
+
+.sos-contact-card .info {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+
+.sos-contact-card .info strong {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.sos-contact-card .info small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sos-badge {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.sos-badge.primary {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sos-badge.relation {
+  background: #f1f5f9;
+  color: #475569;
+}
 
 .sos-contact-card .remove-contact {
   width: 36px;
@@ -175,35 +351,56 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  color: var(--red);
+  color: var(--muted);
+  transition: color 0.15s, transform 0.15s;
 }
 
-.sos-contact-card .remove-contact:active { box-shadow: var(--inset); }
+.sos-contact-card .remove-contact:hover {
+  color: var(--red);
+  transform: scale(1.05);
+}
+
+.sos-contact-card .remove-contact:active {
+  box-shadow: var(--inset);
+  transform: scale(0.96);
+}
+
+.sos-add-contact-box {
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: var(--inset);
+  background: rgba(224, 229, 236, 0.4);
+}
 
 .add-contact-row {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr auto;
+  gap: 8px;
+  align-items: center;
 }
 
-.add-contact-row input {
-  flex: 1;
-  padding: 12px 14px;
+.add-contact-row input,
+.sos-select-relation {
+  padding: 11px 13px;
   border: none;
   border-radius: 12px;
   background: var(--bg);
   box-shadow: var(--inset);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.add-contact-row input:focus {
+.add-contact-row input:focus,
+.sos-select-relation:focus {
   box-shadow: inset 6px 6px 12px var(--shade), inset -6px -6px 12px var(--light), 0 0 0 2px var(--blue);
 }
 
 .add-contact-btn {
-  padding: 12px 18px;
+  padding: 11px 16px;
   border: none;
   border-radius: 12px;
   background: var(--bg);
@@ -213,12 +410,113 @@
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s;
 }
 
-.add-contact-btn:active { box-shadow: var(--inset); }
+.add-contact-btn:hover {
+  transform: translateY(-1px);
+}
 
-@media (max-width: 480px) {
+.add-contact-btn:active {
+  box-shadow: var(--inset);
+  transform: translateY(0);
+}
+
+/* ── Hospital Configuration Box ── */
+.sos-hospital-status-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.sos-hospital-status-pill.configured {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sos-hospital-status-pill.empty {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.hospital-config-card {
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: var(--raised);
+  background: var(--bg);
+}
+
+.hospital-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sos-save-hospital-btn {
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: #0d9e71;
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 2px 4px 10px rgba(13, 158, 113, 0.3);
+  transition: transform 0.15s;
+}
+
+.sos-save-hospital-btn:hover {
+  transform: translateY(-1px);
+}
+
+.sos-clear-hospital-btn {
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--red);
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: var(--raised);
+}
+
+.sos-clear-hospital-btn:active {
+  box-shadow: var(--inset);
+}
+
+.sos-no-contacts {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--muted);
+  box-shadow: var(--inset);
+  border-radius: 14px;
+}
+
+.sos-no-contacts .material-symbols-outlined {
+  font-size: 32px;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+
+.sos-no-contacts p {
+  margin: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
   .sos-modal { padding: 24px 20px; }
+  .add-contact-row { grid-template-columns: 1fr; }
+  .hospital-grid { grid-template-columns: 1fr; }
   .sos-actions { flex-direction: column; }
-  .add-contact-row { flex-direction: column; }
 }
