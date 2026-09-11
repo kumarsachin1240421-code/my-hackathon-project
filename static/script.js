@@ -1783,6 +1783,388 @@ function showReports(data) {
 }
 
 /* ═══════════════════════════════════════════════
+   Hospital Ecosystem & Bedside Clinical Sync
+   ═══════════════════════════════════════════════ */
+const HOSPITAL_ECOSYSTEM_DATA = {
+  hospitalName: 'City Care Multispeciality Hospital',
+  bedNumber: '#304',
+  opdId: '#HSP-8921',
+  doctor: {
+    name: 'Dr. Rajesh Varma, MD',
+    role: 'Chief Consulting Physician',
+    department: 'Internal Medicine & Critical Care',
+    diagnosis: 'Post-Viral Acute Fatigue & Gastric Acid Regulation (Observation Day 2)',
+    notes: 'Patient is stable and responding well to oral antimicrobial therapy. Continue prescribed oral Amoxicillin 500mg 2x daily for 5 full consecutive days without skipping. Morning Pantoprazole 40mg recommended before breakfast for gastric mucosa protection. Maintain hydration (>2.5L/day) and schedule follow-up OPD review in 7 days.',
+    date: 'Today · Discharge Summary'
+  },
+  vitals: {
+    bp: '118/76 mmHg',
+    spo2: '99%',
+    pulse: '72 bpm',
+    temp: '98.4°F'
+  },
+  medications: [
+    {
+      name: 'Amoxicillin',
+      dosage: '500mg',
+      instructions: 'Take with food (2x daily)',
+      doctor_prescription: 'Rx by Dr. Rajesh Varma (City Care Hospital): Post-discharge antibiotic therapy.',
+      scheduled_time: '08:00 AM',
+      stock: 14,
+      icon: 'medication',
+      repeat_label: 'Daily',
+      details: 'Full antibiotic course to treat secondary infection. Take once in morning & once in evening.'
+    },
+    {
+      name: 'Pantoprazole',
+      dosage: '40mg',
+      instructions: 'Morning before breakfast with full glass of water',
+      doctor_prescription: 'Rx by Dr. Rajesh Varma (City Care Hospital): Gastric mucosal protection.',
+      scheduled_time: '07:30 AM',
+      stock: 10,
+      icon: 'water_drop',
+      repeat_label: 'Daily',
+      details: 'Gastric acid regulator. Take 30 minutes before first meal of the day.'
+    },
+    {
+      name: 'Vitamin B-Complex & Zinc',
+      dosage: '1 Capsule',
+      instructions: 'Post-lunch daily',
+      doctor_prescription: 'Rx by Dr. Rajesh Varma (City Care Hospital): Cellular recovery and immunity.',
+      scheduled_time: '01:30 PM',
+      stock: 15,
+      icon: 'wb_sunny',
+      repeat_label: 'Daily',
+      details: 'Nutritional restorative supplement for energy and immune rebuilding.'
+    }
+  ],
+  timeline: [
+    {
+      time: '10:45 AM Today',
+      icon: 'stethoscope',
+      type: 'green',
+      title: 'Doctor Completed Morning Rounds',
+      desc: 'Dr. Rajesh Varma reviewed patient response to morning oral dose. Vitals stable, discharge advice finalized.'
+    },
+    {
+      time: '09:30 AM Today',
+      icon: 'science',
+      type: 'blue',
+      title: 'Lab Report: Blood & Metabolic Panel Updated',
+      desc: 'CBC, Electrolytes, and Renal function tests within normal baseline. Results appended to hospital EMR.'
+    },
+    {
+      time: '08:00 AM Today',
+      icon: 'medication',
+      type: 'amber',
+      title: 'Bedside Nursing Verification',
+      desc: 'Morning oral antibiotic and gastric protection doses administered and logged by Staff Nurse Priyanka S.'
+    },
+    {
+      time: '06:30 AM Today',
+      icon: 'monitor_heart',
+      type: 'purple',
+      title: 'Automated Vitals Telemetry Sync',
+      desc: 'Bedside telemetry unit synced BP, pulse, and oxygen saturation directly to digital health record.'
+    }
+  ]
+};
+
+function showHospitalEcosystem() {
+  document.querySelector('h1').textContent = 'Hospital Ecosystem';
+  document.querySelector('.date').textContent = 'Connected Bedside EMR, Clinical Records & Automated Prescription Sync';
+
+  const isConnected = localStorage.getItem('carewell_hospital_connected') === 'true';
+  const isSynced = localStorage.getItem('carewell_hospital_synced') === 'true';
+
+  let html = '';
+
+  if (!isConnected) {
+    // ── NOT CONNECTED: Render Interactive QR Scanner Card ──
+    html += `
+      <article class="data-card hospital-scanner-card" id="hospitalScannerCard" style="grid-column: 1 / -1;">
+        <div class="scanner-card-header">
+          <div class="scanner-header-badge">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+          </div>
+          <div>
+            <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;color:var(--ink);">🏥 Bedside EMR &amp; Hospital QR Link</h2>
+            <p style="margin:0;font-size:13.5px;color:var(--muted);line-height:1.4;">Scan the QR code at your hospital bedside monitor, OPD card, or discharge slip to link clinical data</p>
+          </div>
+        </div>
+
+        <div class="qr-scanner-frame-wrap" id="qrScannerFrameWrap">
+          <div class="qr-scanner-frame">
+            <div class="scanner-corner tl"></div>
+            <div class="scanner-corner tr"></div>
+            <div class="scanner-corner bl"></div>
+            <div class="scanner-corner br"></div>
+            <div class="scanner-laser-line"></div>
+            <div class="scanner-asset-preview">
+              <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="qr-placeholder-svg">
+                <!-- QR Position Detection Patterns -->
+                <rect x="10" y="10" width="24" height="24" rx="4" stroke="currentColor" stroke-width="4"/>
+                <rect x="16" y="16" width="12" height="12" rx="2" fill="currentColor"/>
+                <rect x="66" y="10" width="24" height="24" rx="4" stroke="currentColor" stroke-width="4"/>
+                <rect x="72" y="16" width="12" height="12" rx="2" fill="currentColor"/>
+                <rect x="10" y="66" width="24" height="24" rx="4" stroke="currentColor" stroke-width="4"/>
+                <rect x="16" y="72" width="12" height="12" rx="2" fill="currentColor"/>
+                <!-- Modules Grid -->
+                <rect x="42" y="12" width="6" height="6" fill="currentColor"/>
+                <rect x="52" y="12" width="6" height="6" fill="currentColor"/>
+                <rect x="42" y="24" width="6" height="6" fill="currentColor"/>
+                <rect x="12" y="44" width="6" height="6" fill="currentColor"/>
+                <rect x="22" y="44" width="6" height="6" fill="currentColor"/>
+                <rect x="44" y="44" width="12" height="12" rx="2" fill="#0d9488"/>
+                <rect x="66" y="44" width="6" height="6" fill="currentColor"/>
+                <rect x="76" y="52" width="6" height="6" fill="currentColor"/>
+                <rect x="42" y="66" width="6" height="6" fill="currentColor"/>
+                <rect x="54" y="74" width="6" height="6" fill="currentColor"/>
+                <rect x="66" y="74" width="6" height="6" fill="currentColor"/>
+                <rect x="76" y="82" width="6" height="6" fill="currentColor"/>
+                <!-- Hospital Center Emblem -->
+                <circle cx="50" cy="50" r="12" fill="var(--bg)" stroke="currentColor" stroke-width="2"/>
+                <path d="M50 44 V56 M44 50 H56" stroke="#0d9488" stroke-width="3.5" stroke-linecap="round"/>
+              </svg>
+              <span class="scanner-frame-tip">Ready for Hospital Bedside QR</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scanner-card-actions">
+          <button type="button" class="btn-scan-hospital" id="scanHospitalBtn">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+            <span>Scan Hospital QR / Connect Bedside</span>
+          </button>
+          <p class="scanner-hint-text">
+            <span>💡</span>
+            <span>Click to connect directly with <strong>City Care Multispeciality Hospital (Bed #304)</strong>.</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Hospital Integration Value Highlights -->
+      <article class="data-card">
+        <h2>⚡ Real-Time EMR Sync</h2>
+        <p>Instant digital bridge linking hospital bedside monitors directly to your personal CareWell care plan.</p>
+        <ul class="feature-checklist" style="margin-top:14px;list-style:none;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink);">
+          <li>✓ Automatic doctor prescription extraction</li>
+          <li>✓ 1-click import to Daily Medication Schedule</li>
+          <li>✓ Real-time telemetry for vitals &amp; lab results</li>
+        </ul>
+      </article>
+
+      <article class="data-card">
+        <h2>🔒 Certified Health Gateway</h2>
+        <p>End-to-end encrypted HL7 &amp; FHIR standard clinical interface adhering to patient privacy standards.</p>
+        <ul class="feature-checklist" style="margin-top:14px;list-style:none;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink);">
+          <li>✓ Hospital-verified electronic medical record</li>
+          <li>✓ Direct doctor-to-patient care instructions</li>
+          <li>✓ Bedside telemetry &amp; nursing intake sync</li>
+        </ul>
+      </article>
+    `;
+  } else {
+    // ── CONNECTED: Persistent Green Pill + Active Prescriptions + Meds Stream + Doctor Timeline ──
+    html += `
+      <!-- Persistent Connected Status Banner -->
+      <div class="hospital-connected-banner" style="grid-column: 1 / -1;">
+        <div class="connected-status-pill">
+          <span class="live-dot pulse-green"></span>
+          <strong>🟢 Connected to City Care Multispeciality Hospital (Bed #304 / OPD ID: #HSP-8921)</strong>
+        </div>
+        <button type="button" class="btn-disconnect-hospital" id="disconnectHospitalBtn" title="Disconnect from bedside monitor">
+          <span class="material-symbols-outlined" style="font-size:16px;">link_off</span>
+          <span>Disconnect / Switch Bed</span>
+        </button>
+      </div>
+
+      <!-- Card 1: Active Hospital Prescriptions -->
+      <article class="data-card hospital-prescription-card" style="grid-column: 1 / -1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="doctor-avatar-circle">
+              <span class="material-symbols-outlined">stethoscope</span>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <h2 style="margin:0;font-size:18px;color:var(--ink);">${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.name)}</h2>
+                <span class="material-symbols-outlined" style="color:#10b981;font-size:18px;" title="Hospital Verified Physician">verified</span>
+              </div>
+              <p style="margin:2px 0 0;font-size:12.5px;color:var(--muted);">${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.role)} · ${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.department)}</p>
+            </div>
+          </div>
+          <span class="hospital-date-badge">${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.date)}</span>
+        </div>
+
+        <div class="clinical-diagnosis-box">
+          <span class="diagnosis-label">Clinical Diagnosis:</span>
+          <strong>${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.diagnosis)}</strong>
+        </div>
+
+        <div class="doctor-notes-box">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:var(--teal);">clinical_notes</span>
+            <span style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:0.03em;">Doctor Notes &amp; Discharge / OPD Advice:</span>
+          </div>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--ink);">“${escapeHtml(HOSPITAL_ECOSYSTEM_DATA.doctor.notes)}”</p>
+        </div>
+
+        <!-- Bedside Vitals Telemetry Row -->
+        <div class="hospital-vitals-row">
+          <div class="vital-item">
+            <span class="vital-lbl">Blood Pressure</span>
+            <strong class="vital-val">${HOSPITAL_ECOSYSTEM_DATA.vitals.bp}</strong>
+          </div>
+          <div class="vital-item">
+            <span class="vital-lbl">Pulse Rate</span>
+            <strong class="vital-val">${HOSPITAL_ECOSYSTEM_DATA.vitals.pulse}</strong>
+          </div>
+          <div class="vital-item">
+            <span class="vital-lbl">Oxygen (SpO2)</span>
+            <strong class="vital-val">${HOSPITAL_ECOSYSTEM_DATA.vitals.spo2}</strong>
+          </div>
+          <div class="vital-item">
+            <span class="vital-lbl">Body Temp</span>
+            <strong class="vital-val">${HOSPITAL_ECOSYSTEM_DATA.vitals.temp}</strong>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2: Hospital Medicines Stream & 1-Click Schedule Sync -->
+      <article class="data-card hospital-meds-stream-card" style="grid-column: 1 / -1;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
+          <div>
+            <h2 style="margin:0 0 4px;font-size:18px;font-weight:800;color:var(--ink);">💊 Hospital Medicines Stream</h2>
+            <p style="margin:0;font-size:13px;color:var(--muted);">Hospital-prescribed medications ready for your personal daily routine</p>
+          </div>
+          <button type="button" class="btn-sync-schedule ${isSynced ? 'synced' : ''}" id="syncHospitalMedsBtn">
+            <span class="material-symbols-outlined">${isSynced ? 'check_circle' : 'sync'}</span>
+            <span>${isSynced ? 'Synced to Daily Schedule' : 'Sync to Daily Schedule'}</span>
+          </button>
+        </div>
+
+        <div class="hospital-meds-list">
+          ${HOSPITAL_ECOSYSTEM_DATA.medications.map(m => `
+            <div class="hospital-med-card">
+              <div class="hospital-med-icon-wrap">
+                <span class="material-symbols-outlined">${m.icon || 'medication'}</span>
+              </div>
+              <div class="hospital-med-info">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3 style="margin:0;font-size:15px;font-weight:800;color:var(--ink);">${escapeHtml(m.name)} <span style="font-weight:600;font-size:13px;color:var(--teal);">(${escapeHtml(m.dosage)})</span></h3>
+                  <span class="hospital-timing-pill">⏰ ${escapeHtml(m.scheduled_time)} · ${escapeHtml(m.repeat_label)}</span>
+                </div>
+                <p style="margin:4px 0 2px;font-size:12.5px;color:var(--ink);font-weight:600;">${escapeHtml(m.instructions)}</p>
+                <p style="margin:0;font-size:11.5px;color:var(--muted);">${escapeHtml(m.details)}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </article>
+
+      <!-- Card 3: Live Doctor Updates Card (Dynamic Timeline) -->
+      <article class="data-card hospital-timeline-card" style="grid-column: 1 / -1;">
+        <h2 style="margin:0 0 4px;font-size:18px;font-weight:800;color:var(--ink);">📋 Live Doctor &amp; Nursing Timeline</h2>
+        <p style="margin:0 0 18px;font-size:13px;color:var(--muted);">Chronological record of bedside doctor rounds, clinical reports, and care updates</p>
+
+        <div class="hospital-timeline-list">
+          ${HOSPITAL_ECOSYSTEM_DATA.timeline.map(item => `
+            <div class="timeline-item">
+              <div class="timeline-marker ${item.type}">
+                <span class="material-symbols-outlined">${item.icon}</span>
+              </div>
+              <div class="timeline-content">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                  <strong style="font-size:13.5px;color:var(--ink);">${escapeHtml(item.title)}</strong>
+                  <span class="timeline-timestamp">${escapeHtml(item.time)}</span>
+                </div>
+                <p style="margin:4px 0 0;font-size:12.5px;color:var(--muted);line-height:1.45;">${escapeHtml(item.desc)}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </article>
+    `;
+  }
+
+  dataView.innerHTML = html;
+
+  // Bind Events
+  const scanBtn = document.getElementById('scanHospitalBtn');
+  if (scanBtn) {
+    scanBtn.addEventListener('click', () => {
+      const wrap = document.getElementById('qrScannerFrameWrap');
+      if (wrap) {
+        wrap.innerHTML = `
+          <div class="connecting-pulse-box">
+            <div class="hospital-spinner"></div>
+            <p style="margin:14px 0 4px;font-weight:800;font-size:16px;color:var(--ink);">Connecting to Hospital EMR / Bedside System...</p>
+            <p style="margin:0;font-size:12.5px;color:var(--muted);">Secure handshake with City Care Gateway (Bed #304)...</p>
+          </div>
+        `;
+      }
+      scanBtn.disabled = true;
+      scanBtn.innerHTML = `<span class="material-symbols-outlined spin">sync</span><span>Connecting...</span>`;
+
+      setTimeout(() => {
+        localStorage.setItem('carewell_hospital_connected', 'true');
+        showToast('🟢 Connected to City Care Multispeciality Hospital (Bed #304 / OPD ID: #HSP-8921)');
+        showHospitalEcosystem();
+      }, 1500);
+    });
+  }
+
+  const syncBtn = document.getElementById('syncHospitalMedsBtn');
+  if (syncBtn) {
+    syncBtn.addEventListener('click', () => {
+      syncHospitalMedsToSchedule();
+    });
+  }
+
+  const disconnectBtn = document.getElementById('disconnectHospitalBtn');
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', () => {
+      localStorage.removeItem('carewell_hospital_connected');
+      localStorage.removeItem('carewell_hospital_synced');
+      showToast('Hospital bedside connection disconnected.');
+      showHospitalEcosystem();
+    });
+  }
+}
+
+function syncHospitalMedsToSchedule() {
+  const currentMeds = getLocalMedications();
+  const hospitalMedsToAdd = HOSPITAL_ECOSYSTEM_DATA.medications;
+
+  let addedCount = 0;
+  hospitalMedsToAdd.forEach((hm, idx) => {
+    const exists = currentMeds.some(m => m.name.toLowerCase() === hm.name.toLowerCase());
+    if (!exists) {
+      currentMeds.push({
+        id: 'hsp_' + Date.now() + '_' + idx,
+        name: hm.name,
+        dosage: hm.dosage,
+        instructions: hm.instructions,
+        doctor_prescription: hm.doctor_prescription,
+        scheduled_time: hm.scheduled_time,
+        stock: hm.stock,
+        icon: hm.icon,
+        repeat_label: hm.repeat_label,
+        status: 'pending'
+      });
+      addedCount++;
+    }
+  });
+
+  saveLocalMedications(currentMeds);
+  localStorage.setItem('carewell_hospital_synced', 'true');
+
+  showToast(`📋 ${addedCount > 0 ? addedCount + ' hospital medication(s)' : 'Hospital medications'} active in your Daily Schedule!`);
+  showHospitalEcosystem();
+}
+
+/* ═══════════════════════════════════════════════
    CareWell Public Testimonials & Reviews System
    ═══════════════════════════════════════════════ */
 const LOCAL_REVIEWS_KEY = 'carewell_public_reviews';
@@ -2428,6 +2810,8 @@ function selectView(view) {
     const isMatch = dv === view || 
       ((view === 'CounsellingSession' || view === 'Counselling' || view === 'MentalHealth' || view === 'Mental Health') && 
        (dv === 'CounsellingSession' || dv === 'Counselling' || dv === 'MentalHealth' || dv === 'Mental Health')) ||
+      ((view === 'HospitalScanner' || view === 'Hospital Scanner' || view === 'HospitalEcosystem' || view === 'Hospital' || view === 'Hospital Ecosystem') && 
+       (dv === 'HospitalScanner' || dv === 'Hospital Scanner' || dv === 'HospitalEcosystem' || dv === 'Hospital' || dv === 'Hospital Ecosystem')) ||
       ((view === 'Today' || view === 'Dashboard') && (dv === 'Today' || dv === 'Dashboard'));
     item.classList.toggle('active', isMatch);
   });
@@ -2438,6 +2822,8 @@ function selectView(view) {
       viewNameEl.textContent = 'YOUR HEALTH, ON TRACK';
     } else if (view === 'CounsellingSession' || view === 'Counselling' || view === 'MentalHealth' || view === 'Mental Health') {
       viewNameEl.textContent = 'COUNSELLING SESSIONS';
+    } else if (view === 'HospitalScanner' || view === 'Hospital Scanner' || view === 'HospitalEcosystem' || view === 'Hospital' || view === 'Hospital Ecosystem') {
+      viewNameEl.textContent = 'HOSPITAL SCANNER';
     } else {
       viewNameEl.textContent = view.toUpperCase();
     }
@@ -2468,6 +2854,23 @@ function selectView(view) {
 
   if (view === 'Settings') return showSettings();
   if (view === 'Pharmacy') return showPharmacy();
+  if (view === 'HospitalScanner' || view === 'Hospital Scanner') {
+    document.querySelector('h1').textContent = 'Hospital Scanner';
+    document.querySelector('.date').textContent = 'Hospital bedside and OPD clinical link';
+    dataView.innerHTML = `
+      <article class="data-card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg); box-shadow: var(--raised-sm); display: grid; place-items: center; margin: 0 auto 16px; color: var(--blue);">
+          <span class="material-symbols-outlined" style="font-size: 28px;">document_scanner</span>
+        </div>
+        <h2 style="margin: 0 0 8px; font-size: 20px; font-weight: 800; color: var(--ink);">Hospital Scanner</h2>
+        <p style="margin: 0; font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto; line-height: 1.5;">
+          Hospital bedside connection and clinical scanner module ready for linking hospital records.
+        </p>
+      </article>
+    `;
+    return;
+  }
+  if (view === 'HospitalEcosystem' || view === 'Hospital' || view === 'Hospital Ecosystem') return showHospitalEcosystem();
   if (view === 'CounsellingSession' || view === 'Counselling' || view === 'MentalHealth' || view === 'Mental Health') return showCounsellingSession();
 
   if (view === 'History') {
@@ -3167,4 +3570,6 @@ window.renderDashboard = renderDashboard;
 window.renderLandingTestimonials = renderLandingTestimonials;
 window.submitUserReview = submitUserReview;
 window.deleteUserReview = deleteUserReview;
+window.showHospitalEcosystem = showHospitalEcosystem;
+window.syncHospitalMedsToSchedule = syncHospitalMedsToSchedule;
 
