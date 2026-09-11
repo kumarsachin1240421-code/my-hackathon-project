@@ -110,6 +110,32 @@ const SOSManager = (() => {
     return phone.replace(/[^\d+]/g, '');
   }
 
+  /* ── Audio Synthesis for SOS Alert Countdown ── */
+  let sosAudioCtx = null;
+  function playSosCountdownBeep(frequency = 880, duration = 0.12) {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!sosAudioCtx && AudioContextClass) {
+        sosAudioCtx = new AudioContextClass();
+      }
+      if (sosAudioCtx && sosAudioCtx.state === 'suspended') {
+        sosAudioCtx.resume();
+      }
+      if (sosAudioCtx) {
+        const osc = sosAudioCtx.createOscillator();
+        const gain = sosAudioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, sosAudioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, sosAudioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, sosAudioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(sosAudioCtx.destination);
+        osc.start();
+        osc.stop(sosAudioCtx.currentTime + duration);
+      }
+    } catch {}
+  }
+
   /* ── SOS Flow ── */
   function openSOS() {
     if (!overlay) createOverlay();
@@ -149,7 +175,7 @@ const SOSManager = (() => {
     modal.innerHTML = `
       <div class="sos-pulse-icon"><span class="material-symbols-outlined">sos</span></div>
       <h2>Emergency SOS</h2>
-      <p>Initiating emergency call, SMS alert, and WhatsApp live location under <strong>CarePill</strong> in:</p>
+      <p>Initiating emergency call, SMS alert, and live GPS location under <strong>CareWell</strong> in:</p>
       
       <div class="sos-countdown" id="sosCountdown">${seconds}</div>
 
@@ -160,7 +186,7 @@ const SOSManager = (() => {
         </div>
         <div class="sos-summary-item">
           <span class="material-symbols-outlined">share_location</span>
-          <span>WhatsApp Location: ${contacts.length} Contact${contacts.length !== 1 ? 's' : ''} (CarePill)</span>
+          <span>Live GPS Coordinates &amp; SMS: ${contacts.length} Contact${contacts.length !== 1 ? 's' : ''}</span>
         </div>
         <div class="sos-summary-item ${hospital ? 'hospital-included' : 'hospital-skipped'}">
           <span class="material-symbols-outlined">local_hospital</span>
@@ -170,27 +196,40 @@ const SOSManager = (() => {
 
       <div class="sos-actions">
         <button type="button" class="sos-confirm" id="sosConfirmNow">
-          <span class="material-symbols-outlined" style="font-size:18px;">send</span>
-          <span>Send SOS Now</span>
+          <span class="material-symbols-outlined" style="font-size:18px;">bolt</span>
+          <span>Send It Now</span>
         </button>
         <button type="button" class="sos-cancel" id="sosCancel">Cancel</button>
       </div>
     `;
+
+    // Play first beep
+    playSosCountdownBeep(880, 0.15);
 
     clearInterval(countdownInterval);
     countdownInterval = setInterval(() => {
       seconds--;
       const el = document.getElementById('sosCountdown');
       if (el) el.textContent = seconds;
+
+      if (seconds > 0) {
+        playSosCountdownBeep(880 + (5 - seconds) * 120, 0.15);
+      }
+
       if (seconds <= 0) {
         clearInterval(countdownInterval);
+        playSosCountdownBeep(1400, 0.35);
         triggerSOS();
       }
     }, 1000);
 
     const confirmBtn = modal.querySelector('#sosConfirmNow');
     const cancelBtn = modal.querySelector('#sosCancel');
-    if (confirmBtn) confirmBtn.addEventListener('click', () => { clearInterval(countdownInterval); triggerSOS(); });
+    if (confirmBtn) confirmBtn.addEventListener('click', () => { 
+      clearInterval(countdownInterval); 
+      playSosCountdownBeep(1400, 0.35);
+      triggerSOS(); 
+    });
     if (cancelBtn) cancelBtn.addEventListener('click', closeSOS);
   }
 
@@ -262,9 +301,9 @@ const SOSManager = (() => {
       }
     }
 
-    // 2. Prepare Messages under the brand name "CarePill"
-    const waText = `🚨 *CarePill EMERGENCY SOS ALERT* 🚨\n\n*${userName}* has triggered an urgent Medical SOS via *CarePill*!\n\n📍 *Current Live Location:*\n${mapUrl}\n\n⚠️ *Immediate assistance required.* Please call or check on them right away.\n\n_Sent securely via CarePill Medical Emergency System._`;
-    const smsText = `[CarePill SOS] EMERGENCY: ${userName} needs immediate medical assistance! Live Location: ${mapUrl}`;
+    // 2. Prepare Messages under the brand name "CareWell"
+    const waText = `🚨 *CareWell EMERGENCY SOS ALERT* 🚨\n\n*${userName}* has triggered an urgent Medical SOS via *CareWell*!\n\n📍 *Current Live Location:*\n${mapUrl}\n\n⚠️ *Immediate assistance required.* Please call or check on them right away.\n\n_Sent securely via CareWell Emergency System._`;
+    const smsText = `[CareWell SOS] EMERGENCY: ${userName} needs immediate medical assistance! Live Location: ${mapUrl}`;
 
     // 3. WhatsApp Location Sharing
     const waStatus = document.getElementById('sosWaStatus');

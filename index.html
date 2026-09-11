@@ -36,7 +36,7 @@
        GLOBAL ORBIT CAPSULE BUFFER (Requirement 4)
        100% Solid #f4f5f6 Opaque Background
        ═══════════════════════════════════════════ -->
-  <div class="global-loader-overlay" id="globalLoader" aria-label="Loading CarePill" role="status" aria-live="polite">
+  <div class="global-loader-overlay" id="globalLoader" aria-label="Loading CareWell" role="status" aria-live="polite">
     <div class="stage">
       <div class="orbit">
         <div class="core"></div>
@@ -47,126 +47,235 @@
   </div>
 
   <!-- ═══════════════════════════════════════════
-       LANDING PAGE (shown when not authenticated)
-       ═══════════════════════════════════════════ -->
+       CAREWELL LANDING PAGE (Matching Image 1 Reference)
+       ═══════════════════════════════════════════════ -->
   <div class="landing-page" id="landingPage">
 
-    <!-- Top Navigation Bar (60% opacity with backdrop blur) -->
+
+    <!-- Top Navigation Bar (Matching Image 1) -->
     <header class="landing-nav">
-      <div class="landing-brand">
-        <div class="landing-logo" aria-label="CarePill Logo">
-          <img src="static/logo.svg" onerror="this.src='logo.svg'" class="brand-logo-img" alt="CarePill Logo">
+      <div class="landing-brand" data-auth="signup" role="button" tabindex="0" aria-label="CareWell Home">
+        <div class="brand-icon-wrap">
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="46" stroke="url(#cGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="210 80"/>
+            <path d="M48 64 C38 54 34 46 34 38 C34 30 40 26 46 26 C50 26 53 28 55 31 C57 28 60 26 64 26 C70 26 76 30 76 38 C76 46 72 54 62 64 L55 70 Z" fill="#10b981"/>
+            <path d="M47 48 L53 54 L65 42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="cGrad" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#2563eb"/>
+                <stop offset="0.6" stop-color="#06b6d4"/>
+                <stop offset="1" stop-color="#10b981"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
         <div class="landing-brand-text">
-          <h1>CarePill</h1>
-          <p>Medicine reminder and dosage tracker</p>
+          <h1>CareWell</h1>
+          <p>Your health, on track.</p>
         </div>
       </div>
-      <div class="landing-auth-buttons">
-        <button class="btn-signup" data-auth="signup" type="button" aria-label="Open Sign Up modal">
-          <span class="material-symbols-outlined">person_add</span>
-          <span class="btn-text">Sign Up</span>
-        </button>
-        <button class="btn-login" data-auth="login" type="button" aria-label="Open Login modal">
-          <span class="material-symbols-outlined">person</span>
-          <span class="btn-text">Login</span>
-        </button>
+
+      <!-- Right Actions: Login CTA + Cloud Quote Badge Aligned Directly Underneath -->
+      <div class="landing-nav-actions-col">
+        <div class="landing-nav-actions">
+          <button class="btn-login" data-auth="login" type="button" aria-label="Open Login modal">
+            <span class="material-symbols-outlined">person</span>
+            <span class="btn-text">Login</span>
+          </button>
+        </div>
+
+        <!-- Relocated Quote Badge: Soft Neumorphic Cloud Pill Directly Underneath Login -->
+        <div class="top-quote-cloud-pill" aria-label="Daily Inspiration Quote">
+          <span class="cloud-pill-emoji">💚</span>
+          <div class="cloud-pill-content">
+            <span class="cloud-pill-sub">Small Steps</span>
+            <strong class="cloud-pill-title">Healthier Tomorrows</strong>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Main Hero Section: Left Text + Right Doctor/Patient Visual -->
-    <main class="landing-hero">
-      <div class="hero-content">
-        <h2 class="hero-headline">
-          Never Miss<br>
-          <span class="hero-headline-accent">a Medicine Again</span>
+    <!-- Main 3-Column Hero Section -->
+    <main class="carewell-hero-section">
+      <!-- Left Column: Headline, Subtext, CTA, Stats -->
+      <div class="hero-left-col">
+        <div class="hero-pill-tag">
+          <span>💙</span>
+          <span>A Healthier Tomorrow, Together</span>
+        </div>
+
+        <h2 class="carewell-hero-headline">
+          Your Everyday
+          <span class="accent-blue">Health &amp; Wellbeing</span>
+          Companion
         </h2>
-        <p class="hero-subtext">
-          Smart reminders, dosage tracking, refill alerts, and caregiver support — all in one place.
+
+        <p class="carewell-hero-subtext">
+          CareWell helps you manage your medicines, track your health, get timely reminders and stay connected with your loved ones — for a healthier, happier you.
         </p>
 
-        <!-- 3 Clickable Feature Cards -->
-        <div class="feature-cards" role="region" aria-label="Features">
-          <button class="feature-card" data-feature="add-med" type="button" aria-label="Add Medicine feature details">
-            <div class="feature-icon teal">
-              <span class="material-symbols-outlined">medication</span>
-            </div>
-            <div class="feature-details">
-              <h3>Add Medicine</h3>
-              <p>Keep track of your medicines</p>
-            </div>
-          </button>
+        <!-- Get Started CTA Button (Requirement 6) -->
+        <button class="carewell-cta-btn" id="getStartedHeroBtn" data-auth="signup" type="button" aria-label="Get Started with CareWell">
+          <span>Get Started</span>
+          <span class="material-symbols-outlined" style="font-size:19px;">arrow_forward</span>
+        </button>
 
-          <button class="feature-card" data-feature="reminder" type="button" aria-label="Set Reminder feature details">
-            <div class="feature-icon amber">
-              <span class="material-symbols-outlined">notifications</span>
-            </div>
-            <div class="feature-details">
-              <h3>Set Reminder</h3>
-              <p>Never miss a dose</p>
-            </div>
-          </button>
-
-          <button class="feature-card" data-feature="reports" type="button" aria-label="View Reports feature details">
-            <div class="feature-icon purple">
-              <span class="material-symbols-outlined">description</span>
-            </div>
-            <div class="feature-details">
-              <h3>View Reports</h3>
-              <p>Health insights &amp; history</p>
-            </div>
-          </button>
+        <!-- Live Statistics Row -->
+        <div class="carewell-stats-row">
+          <div class="carewell-stat-item">
+            <strong>4.8 ★</strong>
+            <span>User Rating</span>
+          </div>
+          <div class="carewell-stat-item">
+            <strong>100%</strong>
+            <span>Better Adherence</span>
+          </div>
         </div>
       </div>
 
-      <!-- Right Side Visual: Doctor with Senior Patient -->
-      <div class="hero-image-container">
-        <img src="static/hero-care.jpg" onerror="this.src='hero-care.jpg'" alt="Caring doctor with smiling senior patient" class="hero-photo" loading="eager">
+      <!-- Center Column: Feathered Doctor & Patient Visual (Clean Alpha Mask) -->
+      <div class="hero-center-col">
+        <div class="hero-ambient-blob"></div>
+
+        <div class="hero-arch-wrap">
+          <img src="static/hero-care.jpg" onerror="this.src='hero-care.jpg'" alt="CareWell Doctor assisting happy senior patient" class="hero-arch-img" loading="eager">
+        </div>
+      </div>
+
+      <!-- Right Column: 4 Neumorphic Feature Cards -->
+      <div class="hero-right-col" role="region" aria-label="CareWell Key Features">
+        <!-- Card 1: Never Miss a Dose -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#2563eb;background:#eff6ff;">
+            <span class="material-symbols-outlined">medication</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Never Miss a Dose</strong>
+            <p>Smart reminders for a healthier you.</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Track Your Progress -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#0284c7;background:#f0f9ff;">
+            <span class="material-symbols-outlined">bar_chart</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Track Your Progress</strong>
+            <p>See your health journey over time.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Stay Connected -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#2563eb;background:#eff6ff;">
+            <span class="material-symbols-outlined">group</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Stay Connected</strong>
+            <p>Keep your loved ones in the loop.</p>
+          </div>
+        </div>
+
+        <!-- Card 4: A Healthier You -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#059669;background:#ecfdf5;">
+            <span class="material-symbols-outlined">verified_user</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>A Healthier You</strong>
+            <p>Build better habits for a brighter tomorrow.</p>
+          </div>
+        </div>
       </div>
     </main>
 
-    <!-- Trust & Highlights Bar -->
-    <section class="trust-bar-section" aria-label="CarePill Guarantees">
-      <div class="trust-bar">
-        <div class="trust-item">
-          <div class="trust-icon-box teal">
-            <span class="material-symbols-outlined">check</span>
-          </div>
-          <div class="trust-info">
-            <div class="trust-stat teal">100%</div>
-            <div class="trust-label">Secure &amp; Private</div>
-            <div class="trust-desc">Your health data is safe</div>
-          </div>
-        </div>
+    <!-- ═══════════════════════════════════════════
+         PUBLIC COMMUNITY TESTIMONIALS SECTION (Requirement 2)
+         ═══════════════════════════════════════════ -->
+    <section class="landing-testimonials-section" id="landingTestimonialsSection" aria-label="What Our Users Say">
+      <div class="testimonials-header">
+        <span class="testimonials-badge">💬 Community Voices</span>
+        <h2 class="testimonials-title">What Our Users Say</h2>
+        <p class="testimonials-sub">Trusted by thousands of families, seniors, and caregivers for smart, stress-free health management.</p>
+      </div>
 
-        <div class="trust-divider" aria-hidden="true"></div>
-
-        <div class="trust-item">
-          <div class="trust-icon-box purple">
-            <span class="material-symbols-outlined">schedule</span>
-          </div>
-          <div class="trust-info">
-            <div class="trust-stat purple">24/7</div>
-            <div class="trust-label">Reminders</div>
-            <div class="trust-desc">We never let you forget</div>
-          </div>
-        </div>
-
-        <div class="trust-divider" aria-hidden="true"></div>
-
-        <div class="trust-item">
-          <div class="trust-icon-box pink">
-            <span class="material-symbols-outlined">favorite</span>
-          </div>
-          <div class="trust-info">
-            <div class="trust-heading-single">Trusted Care</div>
-            <div class="trust-desc">Compassion backed by expertise</div>
-          </div>
-        </div>
+      <!-- Testimonials Dynamic Grid / Carousel -->
+      <div class="testimonials-grid" id="landingTestimonialsGrid">
+        <!-- Rendered dynamically by script.js / default seed fallback -->
       </div>
     </section>
 
+    <!-- Landing Footer with Support / Contact Trigger -->
+    <footer class="landing-footer">
+      <div class="landing-footer-actions">
+        <button type="button" class="btn-contact-team" id="openContactTeamBtn" aria-label="Open Contact Our Team Dialog">
+          <span class="material-symbols-outlined">support_agent</span>
+          <span>Contact Our Team</span>
+        </button>
+      </div>
+      <div class="carewell-bottom-ribbon">
+        CARE TODAY • WELLBEING TOMORROW
+      </div>
+    </footer>
+
   </div>
+
+  <!-- ═══════════════════════════════════════════
+       CONTACT OUR TEAM MODAL OVERLAY (Requirement 1)
+       ═══════════════════════════════════════════ -->
+  <div class="contact-modal-overlay" id="contactTeamModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="contact-modal-card">
+      <button class="auth-modal-close" id="closeContactTeamBtn" aria-label="Close contact dialog">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div class="contact-modal-header">
+        <div class="contact-header-badge">
+          <span class="material-symbols-outlined">support_agent</span>
+        </div>
+        <h2>Contact CareWell Team</h2>
+        <p>Our dedicated healthcare &amp; technical support desk is available 24/7 to assist you.</p>
+      </div>
+
+      <div class="contact-channels-list">
+        <!-- Channel 1: Email -->
+        <div class="contact-channel-item">
+          <div class="channel-icon-wrap email">
+            <span class="material-symbols-outlined">mail</span>
+          </div>
+          <div class="channel-info">
+            <label>Official Support Email</label>
+            <a href="mailto:support@carewell.com" class="channel-link" id="contactEmailLink">support@carewell.com</a>
+          </div>
+          <button type="button" class="btn-copy-contact" onclick="copyContactValue('support@carewell.com', this)" title="Copy email address" aria-label="Copy email address">
+            <span class="material-symbols-outlined">content_copy</span>
+            <span>Copy</span>
+          </button>
+        </div>
+
+        <!-- Channel 2: Phone -->
+        <div class="contact-channel-item">
+          <div class="channel-icon-wrap phone">
+            <span class="material-symbols-outlined">phone_in_talk</span>
+          </div>
+          <div class="channel-info">
+            <label>Emergency &amp; Help Desk Phone</label>
+            <a href="tel:+919876543210" class="channel-link" id="contactPhoneLink">+91 98765 43210</a>
+          </div>
+          <button type="button" class="btn-copy-contact" onclick="copyContactValue('+91 98765 43210', this)" title="Copy phone number" aria-label="Copy phone number">
+            <span class="material-symbols-outlined">content_copy</span>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="contact-modal-footer">
+        <p>💡 Tip: For medical emergencies, you can also use our in-app 1-Click SOS button once logged in.</p>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Interactive Auth & Feature Modal Overlay -->
   <div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-hidden="true">
@@ -299,6 +408,7 @@
       <nav class="side-nav">
         <button class="nav-item active" data-view="Today"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
         <button class="nav-item" data-view="Schedule"><span class="material-symbols-outlined">event_note</span>Schedule</button>
+        <button class="nav-item" data-view="CounsellingSession"><span class="material-symbols-outlined">psychology</span>Counselling Session</button>
         <button class="nav-item" data-view="Refills"><span class="material-symbols-outlined">inventory_2</span>Refills</button>
         <button class="nav-item" data-view="Reports"><span class="material-symbols-outlined">analytics</span>Reports</button>
         <button class="nav-item" data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button>
@@ -312,10 +422,13 @@
       <header class="mobile-header">
         <button class="avatar menu-button" id="menuButton" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>
         <div style="display:flex;align-items:center;gap:8px;">
-          <img src="static/logo.svg" onerror="this.src='logo.svg'" style="width:28px;height:28px;" alt="CarePill">
-          <strong>CarePill</strong>
+          <img src="static/logo.svg" onerror="this.src='logo.svg'" style="width:28px;height:28px;" alt="CareWell">
+          <strong>CareWell</strong>
         </div>
-        <button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="round-button" id="appThemeToggleBtn" title="Toggle Theme" aria-label="Toggle Dark/Light Mode"><span class="material-symbols-outlined">dark_mode</span></button>
+          <button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button>
+        </div>
       </header>
       <main>
         <section class="page-heading">
@@ -329,22 +442,274 @@
               <span class="material-symbols-outlined">add_circle</span>
               <span>New Schedule</span>
             </button>
-            <div class="pending clickable" id="pendingBadge" role="button" tabindex="0" title="Click to view pending medications" aria-label="2 Pending doses - click to view">
-              <i></i><span id="pendingCount">2 Pending</span>
+            <div class="pending clickable" id="pendingBadge" role="button" tabindex="0" title="Click to view pending medications" aria-label="0 Pending doses - click to view">
+              <i></i><span id="pendingCount">0 Pending</span>
             </div>
           </div>
         </section>
-        <section class="progress-card" aria-label="Daily progress"><div><span>Daily progress</span><strong id="progressText">1 of 3 doses complete</strong></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div></section>
-        <section class="medicine-list" aria-label="Today's medicines">
-          <article class="medicine-card due" data-id="1" data-medicine="Atorvastatin"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon"><span class="material-symbols-outlined">medication</span></div><div><h2>Atorvastatin</h2><p>20mg · Take with food</p></div></div><div class="time"><strong>08:00 AM</strong><em>Due now</em></div></div><div class="pills"><span><span class="material-symbols-outlined">inventory_2</span><span class="stock">12 left</span></span><span><span class="material-symbols-outlined">repeat</span>Daily</span></div><div class="actions"><button class="take"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Taken</span></button><button class="icon-action snooze" aria-label="Snooze Atorvastatin"><span class="material-symbols-outlined">snooze</span></button><button class="icon-action dismiss" aria-label="Dismiss Atorvastatin"><span class="material-symbols-outlined">close</span></button></div></article>
-          <article class="medicine-card" data-id="2" data-medicine="Lisinopril"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon muted"><span class="material-symbols-outlined">water_drop</span></div><div><h2>Lisinopril</h2><p>10mg · With water</p></div></div><div class="time"><strong>12:30 PM</strong><span>in 4 hours</span></div></div><div class="pills"><span><span class="material-symbols-outlined">inventory_2</span><span class="stock">24 left</span></span><span><span class="material-symbols-outlined">repeat</span>Daily</span></div><div class="actions"><button class="take early"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Take early</span></button></div></article>
-          <article class="medicine-card compact" data-id="3" data-medicine="Vitamin D3"><div class="medicine-top"><div class="medicine-identity"><div class="medicine-icon muted"><span class="material-symbols-outlined">wb_sunny</span></div><div><h2>Vitamin D3</h2><p>1000 IU · After lunch</p></div></div><div class="actions vitamin-action"><button class="take early"><span class="material-symbols-outlined">check_circle</span><span class="take-label">Take early</span></button></div></article>
-        </section>
+        <section class="progress-card" aria-label="Daily progress"><div><span>Daily progress</span><strong id="progressText">0 of 0 taken</strong></div><div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%;"></div></div></section>
+        <section class="medicine-list" aria-label="Today's medicines"></section>
 
-        <!-- Main Dynamic View Container (Schedule / Refills / Reports / Pharmacy / Settings) -->
+        <!-- Main Dynamic View Container (Schedule / CounsellingSession / Refills / Reports / Pharmacy / Settings) -->
         <section class="data-view" id="dataView" hidden aria-live="polite"></section>
       </main>
-      <nav class="bottom-nav" aria-label="Mobile navigation"><button class="active" data-view="Today"><span class="material-symbols-outlined">medication</span>Today</button><button data-view="History"><span class="material-symbols-outlined">history</span>History</button><button data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button><button data-view="Settings"><span class="material-symbols-outlined">settings</span>Settings</button></nav>
+      <nav class="bottom-nav" aria-label="Mobile navigation">
+        <button class="active" data-view="Today"><span class="material-symbols-outlined">medication</span>Today</button>
+        <button data-view="Schedule"><span class="material-symbols-outlined">event_note</span>Schedule</button>
+        <button data-view="CounsellingSession"><span class="material-symbols-outlined">psychology</span>Counselling</button>
+        <button data-view="Reports"><span class="material-symbols-outlined">analytics</span>Reports</button>
+        <button data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button>
+      </nav>
+
+      <!-- ═══════════════════════════════════════════
+           FLOATING 3D "CAREWELL AI" BOT & CHAT DRAWER (Authenticated Floating Companion)
+           ═══════════════════════════════════════════ -->
+      <div class="carewell-bot-container" id="carewellBotContainer" style="display:none !important;position:fixed !important;bottom:24px !important;right:24px !important;z-index:99999 !important;">
+        <!-- Speech Bubble Above Robot Head -->
+        <div class="bot-speech-bubble" id="botSpeechBubble">
+          <span>Here for a</span>
+          <strong style="color:#10b981;">Healthier You! 💚</strong>
+        </div>
+
+        <!-- 3D Character Avatar (White matte body + Glowing emerald heart face + Waving hand) -->
+        <div class="bot-character-wrap" id="botCharacterAvatar" role="button" tabindex="0" title="Click to chat with CareWell AI" aria-label="Open CareWell AI Voice Assistant">
+          <div class="bot-avatar-3d">
+            <svg viewBox="0 0 160 190" width="82" height="94" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Ambient Drop Shadow -->
+              <ellipse cx="80" cy="180" rx="46" ry="8" fill="rgba(0, 0, 0, 0.15)"/>
+              
+              <!-- Robot Legs -->
+              <rect x="58" y="145" width="18" height="24" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+              <rect x="84" y="145" width="18" height="24" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+              <ellipse cx="67" cy="168" rx="11" ry="5" fill="#e2e8f0"/>
+              <ellipse cx="93" cy="168" rx="11" ry="5" fill="#e2e8f0"/>
+
+              <!-- Body (Glossy Neumorphic White) -->
+              <rect x="42" y="90" width="76" height="64" rx="32" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"/>
+              <path d="M48 100 Q80 108 112 100" stroke="#f1f5f9" stroke-width="2"/>
+
+              <!-- CareWell Chest Logo -->
+              <circle cx="80" cy="116" r="12" stroke="url(#botGrad)" stroke-width="3.5" stroke-dasharray="55 20"/>
+              <path d="M76 119 L80 123 L87 114" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="80" y="136" text-anchor="middle" font-size="7" font-weight="800" fill="#1e293b" font-family="Inter, sans-serif">CareWell</text>
+
+              <!-- Glowing Green Belly Button / Sensor -->
+              <circle cx="80" cy="144" r="5" fill="#10b981"/>
+              <circle cx="80" cy="144" r="7" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.8"/>
+
+              <!-- Left Arm (Resting) -->
+              <path d="M42 106 C30 114 26 128 32 140 C34 144 38 144 42 138 C44 132 44 122 46 114" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+
+              <!-- Right Waving Arm (Animated) -->
+              <g class="bot-waving-arm">
+                <path d="M118 106 C134 98 142 82 138 68 C136 64 132 64 130 70 C126 80 122 92 116 104" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                <!-- Waving Hand Fingers -->
+                <circle cx="138" cy="65" r="5" fill="#10b981"/>
+                <circle cx="144" cy="67" r="4" fill="#10b981"/>
+                <circle cx="133" cy="63" r="4" fill="#10b981"/>
+                <!-- Animated Sound / Signal Arcs -->
+                <path d="M148 56 A 14 14 0 0 1 154 70" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M153 50 A 20 20 0 0 1 160 70" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 3"/>
+              </g>
+
+              <!-- Head (Neumorphic White Helmet with Heart-Shaped Emerald Screen) -->
+              <rect x="30" y="16" width="100" height="80" rx="38" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"/>
+              
+              <!-- Heart Screen Inset (Emerald Glow) -->
+              <path d="M80 84 C48 64 38 48 38 36 C38 24 48 18 58 18 C66 18 74 22 80 28 C86 22 94 18 102 18 C112 18 122 24 122 36 C122 48 112 64 80 84 Z" fill="#047857" stroke="#10b981" stroke-width="3"/>
+              <path d="M80 80 C50 62 42 48 42 38 C42 28 50 22 58 22 C65 22 72 26 80 32 C88 26 95 22 102 22 C110 22 118 28 118 38 C118 48 110 62 80 80 Z" fill="#065f46"/>
+
+              <!-- Glowing Cute Eyes (Happy Curved Arcs) -->
+              <path d="M56 46 Q64 36 72 46" stroke="#6ee7b7" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+              <path d="M88 46 Q96 36 104 46" stroke="#6ee7b7" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+
+              <!-- Cheerful Glowing Smile -->
+              <path d="M72 58 Q80 66 88 58" stroke="#a7f3d0" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+              <defs>
+                <linearGradient id="botGrad" x1="68" y1="104" x2="92" y2="128" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#2563eb"/>
+                  <stop offset="1" stop-color="#10b981"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <div class="bot-bottom-badge">
+            <span class="material-symbols-outlined" style="font-size:12px;">mic</span>
+            <span>Always here to help! 🤍</span>
+          </div>
+        </div>
+
+        <!-- Sleek Neumorphic Chat Drawer (Image 2) -->
+        <div class="carewell-chat-drawer" id="carewellChatDrawer" role="dialog" aria-modal="true" aria-hidden="true">
+          <!-- Drawer Header -->
+          <div class="chat-drawer-header">
+            <div class="chat-header-brand">
+              <div class="chat-brand-logo">
+                <span class="material-symbols-outlined" style="color:#10b981;font-size:20px;">smart_toy</span>
+              </div>
+              <div>
+                <strong>CareWell AI</strong>
+                <span>Online</span>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button type="button" class="chat-ctrl-btn" id="minimizeChatBtn" title="Minimize">_</button>
+              <button type="button" class="chat-ctrl-btn" id="closeChatBtn" title="Close">✕</button>
+            </div>
+          </div>
+
+          <!-- Drawer Body: Messages & Quick Action Pills -->
+          <div class="chat-drawer-body" id="chatDrawerBody">
+            <!-- Initial Welcome Message from Image 2 -->
+            <div class="chat-msg-bubble bot">
+              Hi there! 👋<br>
+              I'm <strong>CareWell AI</strong>, your health and wellbeing assistant.<br>
+              How can I help you today?
+            </div>
+
+            <!-- 4 Action Pills Matching Image 2 Reference -->
+            <div class="chat-quick-actions" id="chatQuickActionPills">
+              <button type="button" class="chat-action-pill" data-command="medication">
+                <div class="pill-icon">💊</div>
+                <span>Medicine Reminders</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-command="reports">
+                <div class="pill-icon">📊</div>
+                <span>Track My Progress</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-command="counselling">
+                <div class="pill-icon">🧠</div>
+                <span>Counselling Session</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-command="caregiver">
+                <div class="pill-icon">👥</div>
+                <span>Caregiver Support</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-command="health_question">
+                <div class="pill-icon">❓</div>
+                <span>Ask a Health Question</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Drawer Footer: Text Input, Voice Mic, Send Button -->
+          <div class="chat-drawer-footer">
+            <button type="button" class="chat-voice-btn" id="chatVoiceMicBtn" title="Speak Voice Command (e.g. 'Book doctor', 'Show reports', 'Trigger SOS')">
+              <span class="material-symbols-outlined" id="chatMicIcon">mic</span>
+            </button>
+            <div class="chat-input-wrap">
+              <input type="text" id="chatDrawerInput" class="chat-text-input" placeholder="Type or speak your message...">
+            </div>
+            <button type="button" class="chat-send-btn" id="chatDrawerSendBtn" title="Send message">
+              <span class="material-symbols-outlined" style="font-size:18px;">send</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       COUNSELLING SESSION DOCTOR BOOKING MODAL (Req 3)
+       ═══════════════════════════════════════════ -->
+  <div class="booking-modal-overlay" id="doctorBookingModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="booking-modal">
+      <button class="auth-modal-close" id="closeDoctorBookingBtn" aria-label="Close booking modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="auth-modal-header">
+        <h2 id="bookingDoctorName">Book Counselling Session</h2>
+        <p id="bookingDoctorTitle">1-on-1 Confidential Health Consultation</p>
+      </div>
+
+      <form id="doctorBookingForm" autocomplete="off">
+        <input type="hidden" id="bookingDoctorId" value="">
+
+        <!-- Session Type Selector -->
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);">Select Consultation Mode:</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <label class="icon-radio active" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Video Call" checked>
+              <span class="material-symbols-outlined" style="font-size:22px;color:var(--blue);">videocam</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Video</small>
+            </label>
+            <label class="icon-radio" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Audio Call">
+              <span class="material-symbols-outlined" style="font-size:22px;color:#10b981;">call</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Audio</small>
+            </label>
+            <label class="icon-radio" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Secure Chat">
+              <span class="material-symbols-outlined" style="font-size:22px;color:#8b5cf6;">chat</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Chat</small>
+            </label>
+          </div>
+        </div>
+
+        <div class="sched-form-grid">
+          <div class="auth-field">
+            <label for="bookingDate">Preferred Date *</label>
+            <input type="date" id="bookingDate" required>
+          </div>
+          <div class="auth-field">
+            <label for="bookingTimeSlot">Time Slot *</label>
+            <select id="bookingTimeSlot" class="sched-select" required>
+              <option value="10:00 AM">10:00 AM (Morning)</option>
+              <option value="11:30 AM">11:30 AM (Morning)</option>
+              <option value="02:00 PM">02:00 PM (Afternoon)</option>
+              <option value="04:00 PM" selected>04:00 PM (Evening)</option>
+              <option value="06:30 PM">06:30 PM (Evening)</option>
+              <option value="08:00 PM">08:00 PM (Night)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="bookingNotes">Concern / Key Topics (Optional)</label>
+          <textarea id="bookingNotes" rows="2" class="sched-textarea" placeholder="e.g. Work stress, sleep trouble, anxiety management..."></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;padding:10px 14px;border-radius:12px;background:var(--bg);box-shadow:var(--inset);">
+          <span style="font-size:12.5px;color:var(--muted);font-weight:600;">Consultation Fee:</span>
+          <strong id="bookingFeeSummary" style="font-size:16px;color:var(--blue);">₹999</strong>
+        </div>
+
+        <button type="submit" class="auth-submit" id="confirmBookingBtn" style="margin-top:10px;">
+          <span class="material-symbols-outlined">event_available</span>
+          <span>Confirm &amp; Book Session</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ACTIONABLE IN-APP ALARM MODAL (Req 2)
+       ═══════════════════════════════════════════ -->
+  <div class="carepill-alarm-popup-overlay" id="alarmPopupOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="carepill-alarm-popup-card">
+      <div class="alarm-popup-icon-ring">
+        <span class="material-symbols-outlined">alarm_on</span>
+      </div>
+      <span style="display:inline-block;padding:3px 12px;border-radius:999px;background:#fee2e2;color:#dc2626;font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">
+        Scheduled Medicine Due Now
+      </span>
+      <h2 id="alarmPopupMedName" style="font-size:22px;color:var(--ink);margin:0 0 6px;">Atorvastatin — 20mg</h2>
+      <p id="alarmPopupInstructions" style="color:var(--muted);font-size:13.5px;margin:0 0 10px;">Take with food as prescribed</p>
+      <p id="alarmPopupRx" style="font-size:11.5px;color:var(--teal);margin:0;"></p>
+
+      <div class="alarm-popup-actions">
+        <button type="button" class="btn-alarm-taken" id="popupTakenBtn">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span>Taken</span>
+        </button>
+        <button type="button" class="btn-alarm-snooze" id="popupSnoozeBtn">
+          <span class="material-symbols-outlined">snooze</span>
+          <span>Snooze 10m</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -366,7 +731,7 @@
       </div>
 
       <div class="profile-options-grid">
-        <!-- Option 1: Camera (Live Camera Viewfinder + Input fallback) -->
+        <!-- Option 1: Camera -->
         <button type="button" class="profile-option-btn camera-opt" id="optCameraBtn">
           <div class="profile-option-icon"><span class="material-symbols-outlined">photo_camera</span></div>
           <div class="profile-option-info">
@@ -387,7 +752,6 @@
         </button>
       </div>
 
-      <!-- Hidden file inputs with appropriate HTML capture/accept attributes -->
       <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" aria-hidden="true">
       <input type="file" id="galleryInput" accept="image/*" style="display:none;" aria-hidden="true">
 
@@ -400,7 +764,7 @@
     </div>
   </div>
 
-  <!-- Live Camera Viewfinder Modal (Used by Profile Photo & Reports File Upload) -->
+  <!-- Live Camera Viewfinder Modal -->
   <div class="camera-live-modal-overlay" id="cameraLiveModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="camera-live-modal">
       <div class="camera-modal-header">
@@ -435,3 +799,4 @@
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 </body>
 </html>
+

@@ -222,20 +222,26 @@ const AlarmManager = (() => {
           body,
           icon: '/static/hero-care.jpg',
           badge: '/static/hero-care.jpg',
-          tag: `carepill-med-${medication.id}`,
+          tag: `carewell-med-${medication.id}`,
           requireInteraction: true,
-          vibrate: [300, 150, 300, 150, 400]
+          vibrate: [300, 150, 300, 150, 400],
+          actions: [
+            { action: 'taken', title: 'Taken' },
+            { action: 'snooze', title: 'Snooze 10m' }
+          ]
         });
 
         notif.onclick = () => {
           window.focus();
           notif.close();
         };
+
+        notif.onclose = () => {};
       } catch {}
     }
   }
 
-  /* ── Trigger Full Alarm ── */
+  /* ── Trigger Full Alarm & Actionable Pop-up ── */
   function triggerAlarm(medication) {
     ensureAudioContext();
     playTone(getSelectedTone(), true);
@@ -245,14 +251,90 @@ const AlarmManager = (() => {
       try { navigator.vibrate([400, 200, 400, 200, 600]); } catch {}
     }
 
-    // Trigger Notification (even if minimized)
+    // Trigger Desktop / Background Notification
     triggerBackgroundNotification(medication);
 
-    // Show In-App Neumorphic Sliding Alert Banner
-    showAlarmBanner(medication);
+    // Show In-App Actionable Alarm Pop-up Modal (Requirement 2)
+    showActionableAlarmPopup(medication);
   }
 
-  /* ── In-App Sliding Banner ── */
+  /* ── Actionable In-App Pop-Up Modal (Requirement 2) ── */
+  function showActionableAlarmPopup(medication) {
+    const overlay = document.getElementById('alarmPopupOverlay');
+    const nameEl = document.getElementById('alarmPopupMedName');
+    const instEl = document.getElementById('alarmPopupInstructions');
+    const rxEl = document.getElementById('alarmPopupRx');
+    const takenBtn = document.getElementById('popupTakenBtn');
+    const snoozeBtn = document.getElementById('popupSnoozeBtn');
+
+    if (!overlay) {
+      // Fallback to banner if modal not in DOM
+      return showAlarmBanner(medication);
+    }
+
+    if (nameEl) nameEl.textContent = `${medication.name} — ${medication.dosage}`;
+    if (instEl) instEl.textContent = medication.instructions || 'Take as scheduled';
+    if (rxEl) {
+      rxEl.textContent = medication.doctor_prescription ? `👨‍⚕️ ${medication.doctor_prescription}` : '';
+      rxEl.style.display = medication.doctor_prescription ? 'block' : 'none';
+    }
+
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // Clone and replace buttons to clear previous event listeners
+    if (takenBtn) {
+      const newTakenBtn = takenBtn.cloneNode(true);
+      takenBtn.parentNode.replaceChild(newTakenBtn, takenBtn);
+
+      newTakenBtn.addEventListener('click', async () => {
+        stopAlarm();
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+
+        // Immediately mark dose as completed in state/localStorage
+        if (typeof updateLocalDose === 'function') {
+          const db = updateLocalDose(medication.id, 'taken');
+          if (typeof renderDashboard === 'function') renderDashboard(db);
+        }
+
+        // Also trigger API if available
+        try {
+          await fetch(`/api/medications/${medication.id}/dose`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'taken' }),
+          });
+        } catch {}
+
+        if (typeof currentView !== 'undefined') {
+          if (currentView === 'Schedule' && typeof showSchedule === 'function') {
+            showSchedule(getLocalSchedule());
+          } else if (currentView === 'Reports' && typeof showReports === 'function') {
+            showReports(getLocalWeeklyReports());
+          }
+        }
+
+        if (typeof notify === 'function') notify(`✅ ${medication.name} marked as taken!`);
+      });
+    }
+
+    if (snoozeBtn) {
+      const newSnoozeBtn = snoozeBtn.cloneNode(true);
+      snoozeBtn.parentNode.replaceChild(newSnoozeBtn, snoozeBtn);
+
+      newSnoozeBtn.addEventListener('click', () => {
+        stopAlarm();
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+
+        if (typeof notify === 'function') notify(`⏰ ${medication.name} snoozed for 10 minutes.`);
+        setTimeout(() => triggerAlarm(medication), 10 * 60 * 1000);
+      });
+    }
+  }
+
+  /* ── In-App Sliding Banner Fallback ── */
   function showAlarmBanner(medication) {
     let banner = document.getElementById('alarmBanner');
     if (!banner) {
@@ -274,8 +356,8 @@ const AlarmManager = (() => {
           ${medication.doctor_prescription ? `<p class="alarm-banner-rx"><span class="material-symbols-outlined">medical_information</span> ${escapeHtml(medication.doctor_prescription)}</p>` : ''}
         </div>
         <div class="alarm-banner-actions">
-          <button class="alarm-btn-take" id="alarmTakeBtn"><span class="material-symbols-outlined">check_circle</span> Take Now</button>
-          <button class="alarm-btn-snooze" id="alarmSnoozeBtn"><span class="material-symbols-outlined">snooze</span> Snooze</button>
+          <button class="alarm-btn-take" id="alarmTakeBtn"><span class="material-symbols-outlined">check_circle</span> Taken</button>
+          <button class="alarm-btn-snooze" id="alarmSnoozeBtn"><span class="material-symbols-outlined">snooze</span> Snooze 10m</button>
           <button class="alarm-btn-dismiss" id="alarmDismissBtn"><span class="material-symbols-outlined">close</span> Dismiss</button>
         </div>
       </div>
@@ -292,14 +374,9 @@ const AlarmManager = (() => {
       takeBtn.addEventListener('click', async () => {
         stopAlarm();
         banner.classList.remove('visible');
-        if (typeof requestDose === 'function') {
-          const card = document.querySelector(`[data-id="${medication.id}"]`);
-          if (card) {
-            try {
-              const res = await requestDose(card, 'taken');
-              if (typeof renderDashboard === 'function') renderDashboard(res.dashboard);
-            } catch {}
-          }
+        if (typeof updateLocalDose === 'function') {
+          const db = updateLocalDose(medication.id, 'taken');
+          if (typeof renderDashboard === 'function') renderDashboard(db);
         }
         if (typeof notify === 'function') notify(`✅ ${medication.name} recorded as taken!`);
       });

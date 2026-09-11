@@ -156,18 +156,42 @@ const AuthManager = (() => {
 
   /* ── UI Rendering & Views ── */
   function showLanding() {
+    document.body.classList.remove('user-authenticated');
     const landing = document.getElementById('landingPage');
     const shell = document.getElementById('appShell');
+    const bot = document.getElementById('carewellBotContainer');
     if (landing) landing.style.display = 'flex';
     if (shell) shell.style.display = 'none';
+    if (bot) {
+      bot.style.setProperty('display', 'none', 'important');
+      bot.style.setProperty('visibility', 'hidden', 'important');
+      bot.style.setProperty('opacity', '0', 'important');
+      const drawer = document.getElementById('carewellChatDrawer');
+      if (drawer) {
+        drawer.classList.remove('active', 'open');
+        drawer.setAttribute('aria-hidden', 'true');
+      }
+    }
     if (typeof hideLoader === 'function') hideLoader();
+    if (typeof window.syncCareWellBotVisibility === 'function') window.syncCareWellBotVisibility();
   }
 
   function showApp() {
+    document.body.classList.add('user-authenticated');
     const landing = document.getElementById('landingPage');
     const shell = document.getElementById('appShell');
+    const bot = document.getElementById('carewellBotContainer');
     if (landing) landing.style.display = 'none';
-    if (shell) shell.style.display = '';
+    if (shell) shell.style.display = 'block';
+    if (bot) {
+      bot.style.setProperty('display', 'flex', 'important');
+      bot.style.setProperty('visibility', 'visible', 'important');
+      bot.style.setProperty('opacity', '1', 'important');
+      bot.style.setProperty('position', 'fixed', 'important');
+      bot.style.setProperty('bottom', '24px', 'important');
+      bot.style.setProperty('right', '24px', 'important');
+      bot.style.setProperty('z-index', '99999', 'important');
+    }
 
     // Update user display in app sidebar (persisting localStorage custom name)
     const profileName = document.querySelector('#sidebarUserName') || document.querySelector('.profile strong');
@@ -178,7 +202,11 @@ const AuthManager = (() => {
     if (typeof updateAvatarDisplays === 'function') {
       updateAvatarDisplays();
     }
+    if (typeof selectView === 'function') {
+      selectView('Today');
+    }
     if (typeof hideLoader === 'function') hideLoader();
+    if (typeof window.syncCareWellBotVisibility === 'function') window.syncCareWellBotVisibility();
   }
 
   function openAuthModal(loginMode = true) {

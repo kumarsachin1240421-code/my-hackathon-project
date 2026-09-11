@@ -1,3 +1,7 @@
 carepill.db
 __pycache__/
 venv/
+.env
+.env.local
+.env.*
+
