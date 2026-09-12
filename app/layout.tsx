@@ -1,11 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import '@/style.css';
 
 export const metadata: Metadata = {
   title: 'CareWell — Your Everyday Health & Wellbeing Companion',
   description: 'Smart medicine reminders, caregiver tracking, and emergency care',
   manifest: 'manifest.json',
-  themeColor: '#2563eb',
   icons: {
     icon: [
       { url: 'favicon.ico' },
@@ -17,6 +16,10 @@ export const metadata: Metadata = {
       { url: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
