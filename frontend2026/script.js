@@ -4386,7 +4386,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sosBtn = e.target.closest('#emergency') || e.target.closest('.emergency');
     if (sosBtn && !e.target.closest('#sosModalOverlay') && !e.target.closest('.sos-modal')) {
-      if (typeof SOSManager !== 'undefined') SOSManager.openSOS();
+      if (typeof SOSManager !== 'undefined' && typeof SOSManager.handleSOS === 'function') {
+        SOSManager.handleSOS();
+      } else if (typeof SOSManager !== 'undefined') {
+        SOSManager.openSOS();
+      }
     }
   });
 
