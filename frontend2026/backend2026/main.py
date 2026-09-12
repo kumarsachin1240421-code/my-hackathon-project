@@ -839,6 +839,11 @@ def ai_chat(payload: AIChatRequest) -> dict:
                 if content_text:
                     contents.append({"role": role, "parts": [{"text": content_text}]})
 
+    if user_message:
+        last_item = contents[-1] if contents else None
+        if not last_item or last_item.get("role") != "user" or last_item.get("parts", [{}])[0].get("text") != user_message:
+            contents.append({"role": "user", "parts": [{"text": user_message}]})
+
     if not contents:
         contents = [{"role": "user", "parts": [{"text": user_message}]}]
 
