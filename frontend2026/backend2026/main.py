@@ -4,6 +4,8 @@ Run from this directory with: uvicorn main:app --reload
 Then open http://127.0.0.1:8000.
 """
 from __future__ import annotations
+import base64
+import concurrent.futures
 import hashlib
 import hmac
 import json
@@ -12,6 +14,7 @@ import secrets
 import sqlite3
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
@@ -588,9 +591,124 @@ def add_sos_contact(contact: SOSContact, request: Request) -> dict:
     return {"status": "added"}
 
 
+class TwilioSOSTrigger(BaseModel):
+    patientName: Optional[str] = "Patient"
+    bloodGroup: Optional[str] = "N/A"
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    caregiverPhone: str
+
+
+def _dispatch_twilio_message(account_sid: str, auth_token: str, from_phone: str, to_phone: str, body: str) -> dict:
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+    data = urllib.parse.urlencode({"From": from_phone, "To": to_phone, "Body": body}).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST")
+    auth_str = f"{account_sid}:{auth_token}"
+    b64_auth = base64.b64encode(auth_str.encode("utf-8")).decode("ascii")
+    req.add_header("Authorization", f"Basic {b64_auth}")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _dispatch_twilio_call(account_sid: str, auth_token: str, from_phone: str, to_phone: str, twiml: str) -> dict:
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Calls.json"
+    data = urllib.parse.urlencode({"From": from_phone, "To": to_phone, "Twiml": twiml}).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST")
+    auth_str = f"{account_sid}:{auth_token}"
+    b64_auth = base64.b64encode(auth_str.encode("utf-8")).decode("ascii")
+    req.add_header("Authorization", f"Basic {b64_auth}")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+@app.post("/api/sos")
+def dynamic_twilio_sos(payload: TwilioSOSTrigger) -> dict:
+    phone = payload.caregiverPhone.strip() if payload.caregiverPhone else ""
+    if not phone or not phone.startswith("+") or len("".join(c for c in phone if c.isdigit())) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Valid caregiverPhone with country code (e.g., +91...) is required"
+        )
+
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+    from_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
+
+    if not account_sid or not auth_token or not from_phone:
+        raise HTTPException(
+            status_code=500,
+            detail="Twilio credentials not configured in environment"
+        )
+
+    patient = payload.patientName.strip() if payload.patientName else "Patient"
+    blood = payload.bloodGroup.strip() if payload.bloodGroup else "N/A"
+    if payload.lat is not None and payload.lng is not None:
+        location_url = f"https://maps.google.com/?q={payload.lat},{payload.lng}"
+    else:
+        location_url = "https://maps.google.com"
+
+    sms_body = (
+        f"EMERGENCY ALERT: It's emergency please come as soon as possible! Patient: {patient} (Blood: {blood}). Location: {location_url}"
+    )
+    twiml_voice = (
+        '<Response><Say voice="alice">'
+        "It's emergency please come as soon as possible. Your contact has triggered an emergency alert. Please check your messages for coordinates immediately."
+        "</Say></Response>"
+    )
+
+    call_res = None
+    sms_res = None
+    call_err = None
+    sms_err = None
+
+    # 1. Prioritize Voice Call First in independent try-except
+    try:
+        call_res = _dispatch_twilio_call(account_sid, auth_token, from_phone, phone, twiml_voice)
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        try:
+            call_err = json.loads(err_body).get("message", str(e))
+        except Exception:
+            call_err = err_body or str(e)
+        print(f"[Twilio Voice Error] HTTP {e.code}: {call_err}")
+    except Exception as e:
+        call_err = str(e)
+        print(f"[Twilio Voice Unexpected Error]: {e}")
+
+    # 2. Isolate SMS in independent try-except so SMS failure never blocks Voice Call
+    try:
+        sms_res = _dispatch_twilio_message(account_sid, auth_token, from_phone, phone, sms_body)
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        try:
+            sms_err = json.loads(err_body).get("message", str(e))
+        except Exception:
+            sms_err = err_body or str(e)
+        print(f"[Twilio SMS Warning] HTTP {e.code}: {sms_err}")
+    except Exception as e:
+        sms_err = str(e)
+        print(f"[Twilio SMS Unexpected Error]: {e}")
+
+    call_status = "success" if call_res else "failed"
+    sms_status = "success" if sms_res else "failed"
+
+    # Return overall state without crashing
+    return {
+        "success": call_status == "success" or sms_status == "success",
+        "message": "Emergency alert sent successfully",
+        "callStatus": call_status,
+        "callSid": call_res.get("sid") if call_res else None,
+        "callError": call_err,
+        "smsStatus": sms_status,
+        "smsSid": sms_res.get("sid") if sms_res else None,
+        "smsError": sms_err,
+        "mapsUrl": location_url
+    }
+
+
 # ─── Gemini AI Integration ──────────────────────────────────────────────────
 
-def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gemini-3.5-flash") -> str:
+def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gemini-3.7-flash") -> str:
     """Call Google Gemini REST API with automated model fallback."""
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
     if not api_key:
@@ -600,7 +718,7 @@ def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gem
         )
 
     # Preferred models in sequence
-    models_to_try = [model, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]
+    models_to_try = [model, "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
     seen = set()
     ordered_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -645,8 +763,9 @@ def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gem
 
 
 class AIChatRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=2000)
+    message: str = Field(default="", max_length=2000)
     context: Optional[str] = None
+    history: Optional[list] = None
 
 
 class AIPrescriptionRequest(BaseModel):
@@ -663,25 +782,92 @@ def get_ai_status() -> dict:
         "status": "ready" if has_key else "missing_key",
         "configured": has_key,
         "key_preview": preview,
-        "model": "gemini-3.5-flash",
+        "model": "gemini-3.7-flash",
     }
 
 
 @app.post("/api/ai/chat")
 def ai_chat(payload: AIChatRequest) -> dict:
-    """CarePill AI Health & Medication assistant endpoint."""
-    system_prompt = (
-        "You are CarePill AI, an intelligent, empathetic medical adherence and medication advisor. "
-        "Help patients understand dosage timing, adherence benefits, gentle lifestyle tips, and potential interactions. "
-        "Always provide structured, friendly, and easy-to-read answers with bullet points where appropriate. "
-        "Important safety reminder: Always instruct patients to consult their prescribing physician or emergency lines (108/911) for severe symptoms."
-    )
-    user_prompt = payload.message
-    if payload.context:
-        user_prompt = f"Patient context:\n{payload.context}\n\nPatient question: {payload.message}"
+    """CareWell AI Health, Medication, and Site Navigation Assistant."""
+    message = (payload.message or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Empty message")
 
-    reply = call_gemini_api(user_prompt, system_instruction=system_prompt)
-    return {"reply": reply, "model": "gemini-3.5-flash"}
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+
+    system_instruction = (
+        "You are CareWell AI, an empathetic, intelligent dual-role healthcare and wellness companion and site operator for the CareWell platform.\n\n"
+        "Your capabilities consist of TWO core roles:\n\n"
+        "1. WEBSITE SITE OPERATOR & INTENT DETECTOR:\n"
+        "When the user asks to navigate, trigger actions, manage medications, or query site features, respond with actionable guidance:\n"
+        "- Navigating to Counselling Sessions, Reports, Today's Schedule, Refills, Pharmacy, Settings, or History\n"
+        "- Triggering Emergency SOS countdown safety protocol\n"
+        "- Adding a new medication schedule or dosage\n"
+        "- Marking medications as taken\n"
+        "- Checking current schedule, daily progress, pending doses, inventory stock, or weekly adherence rate\n"
+        "- Toggling dark/light mode\n"
+        "Always provide a friendly confirmation (e.g., 'Navigating to Counselling Sessions now...').\n\n"
+        "2. HEALTHCARE & HUMAN BODY KNOWLEDGE ASSISTANT:\n"
+        "When the user asks general questions about health, wellness, nutrition, anatomy, lifestyle, medications, biology, or symptoms:\n"
+        "- Answer clearly, accurately, warmly, and empathetically.\n"
+        "- Provide practical explanations for common symptoms, medical terms, anatomical functions, and healthy routines.\n"
+        "- ALWAYS include this polite disclaimer at the end of health guidance:\n"
+        "'⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.'\n"
+    )
+
+    user_prompt = message
+    if payload.context:
+        user_prompt = f"Patient context:\n{payload.context}\n\nPatient question: {message}"
+
+    models_to_try = ["gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+
+    if api_key:
+        for model_name in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            body_data = {
+                "systemInstruction": {
+                    "parts": [{"text": system_instruction}]
+                },
+                "contents": [
+                    {"role": "user", "parts": [{"text": user_prompt}]}
+                ],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 1000
+                }
+            }
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(body_data).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=12) as response:
+                    res_json = json.loads(response.read().decode("utf-8"))
+                    text = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                    return {"reply": text, "source": "gemini_api", "model": model_name}
+            except Exception:
+                continue
+
+    # Fallback smart healthcare & operator engine if offline or rate-limited or key missing
+    q_lower = message.lower()
+    if any(w in q_lower for w in ["counsel", "mental health", "therap", "psychiat"]):
+        return {"reply": "🧠 Navigating to Counselling Sessions with certified specialists.", "action": "NAVIGATE", "target": "counselling"}
+    if any(w in q_lower for w in ["report", "adherence", "streak", "progress chart"]):
+        return {"reply": "📊 Opening your Patient Medicine Report and Weekly Adherence Dial.", "action": "NAVIGATE", "target": "reports"}
+    if any(w in q_lower for w in ["sos", "emergency", "ambulance", "help me"]):
+        return {"reply": "🚨 Activating Emergency SOS countdown protocol!", "action": "TRIGGER_SOS"}
+    if any(w in q_lower for w in ["add med", "new med", "add schedule"]):
+        return {"reply": "💊 Opening the New Medication Schedule creator.", "action": "ADD_MEDICINE"}
+
+    return {
+        "reply": (
+            "I am CareWell AI, your health and wellness companion. I can help you manage your daily medications, "
+            "track your progress, book counselling sessions, or answer general health, anatomy, and wellness questions.\n\n"
+            "⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies."
+        ),
+        "source": "fallback"
+    }
 
 
 @app.post("/api/ai/analyze-prescription")
@@ -898,91 +1084,6 @@ def query_hospitals(payload: HospitalQueryPayload) -> dict:
         "triageResult": None
     }
 
-
-
-
-
-class ChatRequest(BaseModel):
-    message: str
-    history: Optional[list] = None
-
-@app.post("/api/ai/chat")
-def ai_chat(payload: ChatRequest):
-    message = payload.message.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="Empty message")
-
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
-    
-    system_instruction = (
-        "You are CareWell AI, an empathetic, intelligent dual-role healthcare and wellness companion and site operator for the CarePill platform.\n\n"
-        "Your capabilities consist of TWO core roles:\n\n"
-        "1. WEBSITE SITE OPERATOR & INTENT DETECTOR:\n"
-        "When the user asks to navigate, trigger actions, manage medications, or query site features, respond with actionable guidance:\n"
-        "- Navigating to Counselling Sessions, Reports, Today's Schedule, Refills, Pharmacy, Settings, or History\n"
-        "- Triggering Emergency SOS countdown safety protocol\n"
-        "- Adding a new medication schedule or dosage\n"
-        "- Marking medications as taken\n"
-        "- Checking current schedule, daily progress, pending doses, inventory stock, or weekly adherence rate\n"
-        "- Toggling dark/light mode\n"
-        "Always provide a friendly confirmation (e.g., 'Navigating to Counselling Sessions now...').\n\n"
-        "2. HEALTHCARE & HUMAN BODY KNOWLEDGE ASSISTANT:\n"
-        "When the user asks general questions about health, wellness, nutrition, anatomy, lifestyle, medications, biology, or symptoms:\n"
-        "- Answer clearly, accurately, warmly, and empathetically.\n"
-        "- Provide practical explanations for common symptoms, medical terms, anatomical functions, and healthy routines.\n"
-        "- ALWAYS include this polite disclaimer at the end of health guidance:\n"
-        "'⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.'\n"
-    )
-
-    models_to_try = ["gemini-3.6-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-flash-latest"]
-    
-    if api_key:
-        for model_name in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            body_data = {
-                "systemInstruction": {
-                    "parts": [{"text": system_instruction}]
-                },
-                "contents": [
-                    {"role": "user", "parts": [{"text": message}]}
-                ],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 1000
-                }
-            }
-            try:
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(body_data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=12) as response:
-                    res_json = json.loads(response.read().decode("utf-8"))
-                    text = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                    return {"reply": text, "source": "gemini_api", "model": model_name}
-            except Exception:
-                continue
-
-    # Fallback smart healthcare & operator engine if offline or rate-limited
-    q_lower = message.lower()
-    if any(w in q_lower for w in ["counsel", "mental health", "therap", "psychiat"]):
-        return {"reply": "🧠 Navigating to Counselling Sessions with certified specialists.", "action": "NAVIGATE", "target": "counselling"}
-    if any(w in q_lower for w in ["report", "adherence", "streak", "progress chart"]):
-        return {"reply": "📊 Opening your Patient Medicine Report and Weekly Adherence Dial.", "action": "NAVIGATE", "target": "reports"}
-    if any(w in q_lower for w in ["sos", "emergency", "ambulance", "help me"]):
-        return {"reply": "🚨 Activating Emergency SOS countdown protocol!", "action": "TRIGGER_SOS"}
-    if any(w in q_lower for w in ["add med", "new med", "add schedule"]):
-        return {"reply": "💊 Opening the New Medication Schedule creator.", "action": "ADD_MEDICINE"}
-    
-    return {
-        "reply": (
-            "I am CareWell AI, your health and wellness companion. I can help you manage your daily medications, "
-            "track your progress, book counselling sessions, or answer general health, anatomy, and wellness questions.\n\n"
-            "⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies."
-        ),
-        "source": "fallback"
-    }
 
 # ─── Serve Frontend ─────────────────────────────────────────────────────────
 

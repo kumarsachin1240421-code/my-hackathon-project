@@ -17,7 +17,8 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.453.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "twilio": "^5.3.4"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

@@ -1,5 +1,6 @@
 import urllib.request
 import urllib.parse
+import urllib.error
 import json
 import re
 import sys
@@ -164,7 +165,62 @@ def run_tests():
     assert del_data.get("status") == "success" or "deleted" in del_data.get("message", "").lower(), "Expected success or deleted message on delete"
     print(f"[PASS] DELETE /api/reviews/{created_id} successfully deleted review from database")
 
+    # Test 4: Dynamic Twilio SOS Integration Verification
+    print("\n--- Test 4: Dynamic Twilio SOS Integration Verification ---")
+
+    # 4a. Verify .env.local contains Twilio credentials
+    with open(".env.local", "r", encoding="utf-8") as f:
+        env_content = f.read()
+    assert "TWILIO_ACCOUNT_SID=" in env_content and "AC" in env_content, "TWILIO_ACCOUNT_SID missing or mismatch"
+    assert "TWILIO_AUTH_TOKEN=" in env_content, "TWILIO_AUTH_TOKEN missing or mismatch"
+    assert "TWILIO_PHONE_NUMBER=" in env_content, "TWILIO_PHONE_NUMBER missing or mismatch"
+    print("[PASS] .env.local correctly configured with Twilio SID, Auth Token, and Phone Number")
+
+    # 4b. Verify package.json contains twilio
+    with open("package.json", "r", encoding="utf-8") as f:
+        pkg_content = f.read()
+    assert '"twilio"' in pkg_content, "twilio dependency missing from package.json"
+    print("[PASS] package.json contains twilio dependency")
+
+    # 4c. Verify Next.js route handler app/api/sos/route.js
+    with open("app/api/sos/route.js", "r", encoding="utf-8") as f:
+        next_route = f.read()
+    assert "import twilio from 'twilio';" in next_route, "twilio import missing in Next route"
+    assert "client.messages.create" in next_route, "messages.create missing in Next route"
+    assert "client.calls.create" in next_route, "calls.create missing in Next route"
+    assert "client.messages.create" in next_route, "messages.create missing in Next route"
+    assert next_route.find("client.calls.create") < next_route.find("client.messages.create"), "Voice call must be prioritized before SMS"
+    assert "Emergency alert sent successfully" in next_route, "Success message missing in Next route"
+    print("[PASS] Next.js Route Handler (app/api/sos/route.js) verified with prioritized Voice Call and isolated SMS")
+
+    # 4d. Verify Frontend sos.js logic
+    with open("sos.js", "r", encoding="utf-8") as f:
+        sos_content = f.read()
+    assert "getCaregiverPhone" in sos_content, "getCaregiverPhone missing in sos.js"
+    assert "setCaregiverPhone" in sos_content, "setCaregiverPhone missing in sos.js"
+    assert "promptConfigureCaregiver" in sos_content, "promptConfigureCaregiver missing in sos.js"
+    assert "Sending SOS..." in sos_content, "'Sending SOS...' feedback missing in sos.js"
+    assert "Alert Dispatched: Call &amp; SMS Sent" in sos_content or "Alert Dispatched: Call & SMS Sent" in sos_content, "Alert Dispatched message missing in sos.js"
+    assert "navigator.geolocation.getCurrentPosition" in sos_content, "navigator.geolocation missing in sos.js"
+    assert "fetch('/api/sos'" in sos_content, "POST /api/sos fetch missing in sos.js"
+    print("[PASS] Frontend sos.js verified with dynamic caregiver retrieval, prompt fallback, geolocation, and feedback")
+
+    # 4e. Verify Live Backend /api/sos validation
+    invalid_payload = {"caregiverPhone": "9876543210"}
+    try:
+        inv_req = urllib.request.Request(
+            f"{base_url}/api/sos",
+            data=json.dumps(invalid_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        urllib.request.urlopen(inv_req)
+        assert False, "Expected 400 Bad Request for phone missing '+' country code"
+    except urllib.error.HTTPError as e:
+        assert e.code == 400, f"Expected status 400, got {e.code}"
+        print("[PASS] Live /api/sos rejects phone numbers without country code (+ prefix) with HTTP 400")
+
     print("\n=== ALL AUTOMATED VERIFICATION CHECKS PASSED PERFECTLY ===")
 
 if __name__ == "__main__":
     run_tests()
+

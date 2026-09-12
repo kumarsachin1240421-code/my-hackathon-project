@@ -1,39 +1,90 @@
 /* ═══════════════════════════════════════════════
-   CarePill — SOS Emergency Manager
-   Confirmation countdown → Call + SMS + WhatsApp Location under "CarePill"
-   Conditional Hospital Dispatch (only if hospital details are added)
+   CarePill / CareWell — SOS Emergency Manager
+   Confirmation countdown → Live Twilio Voice Call & Transactional SMS
+   Dynamic Caregiver Phone State (No hardcoded numbers)
+   Conditional Hospital Dispatch & WhatsApp/Maps Fallback
    ═══════════════════════════════════════════════ */
 
 const SOSManager = (() => {
   const CONTACTS_KEY = 'carepill_sos_contacts';
   const HOSPITAL_KEY = 'carepill_hospital_details';
   const AMBULANCE_KEY = 'carepill_ambulance';
+  const CAREGIVER_PHONE_KEY = 'carepill_caregiver_phone';
+  const BLOOD_GROUP_KEY = 'carepill_blood_group';
   let overlay = null;
   let countdownInterval = null;
 
-  /* ── Default Initial Contacts ── */
-  const DEFAULT_CONTACTS = [
-    { id: 1, name: 'Family Member (Mom/Dad)', phone: '+91 98765 43210', relation: 'Family' },
-    { id: 2, name: 'Close Friend / Caregiver', phone: '+91 91234 56789', relation: 'Friend' }
-  ];
-
-  /* ── Storage ── */
+  /* ── Storage & Dynamic State ── */
   function getContacts() {
     try {
       const raw = localStorage.getItem(CONTACTS_KEY);
-      if (!raw) {
-        localStorage.setItem(CONTACTS_KEY, JSON.stringify(DEFAULT_CONTACTS));
-        return DEFAULT_CONTACTS;
-      }
+      if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : DEFAULT_CONTACTS;
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return DEFAULT_CONTACTS;
+      return [];
     }
   }
 
   function saveContacts(c) {
     try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(c)); } catch {}
+  }
+
+  function getCaregiverPhone() {
+    // 1. Check direct dedicated caregiver phone in localStorage
+    try {
+      const direct = localStorage.getItem(CAREGIVER_PHONE_KEY);
+      if (direct && direct.trim()) return direct.trim();
+    } catch {}
+
+    // 2. Check contacts list: priority to contact with relation === 'Caregiver', then first valid
+    const contacts = getContacts();
+    if (Array.isArray(contacts) && contacts.length > 0) {
+      const caregiver = contacts.find(c => c && c.relation && c.relation.toLowerCase() === 'caregiver');
+      if (caregiver && caregiver.phone && caregiver.phone.trim()) {
+        return caregiver.phone.trim();
+      }
+      const firstWithPhone = contacts.find(c => c && c.phone && c.phone.trim());
+      if (firstWithPhone && firstWithPhone.phone) {
+        return firstWithPhone.phone.trim();
+      }
+    }
+
+    // 3. Check user profile / session state
+    try {
+      const user = JSON.parse(localStorage.getItem('carepill_user') || 'null');
+      if (user && user.emergencyPhone) return user.emergencyPhone.trim();
+      if (user && user.caregiverPhone) return user.caregiverPhone.trim();
+      if (user && user.phone) return user.phone.trim();
+    } catch {}
+
+    return '';
+  }
+
+  function setCaregiverPhone(phone) {
+    try {
+      if (phone && phone.trim()) {
+        localStorage.setItem(CAREGIVER_PHONE_KEY, phone.trim());
+      } else {
+        localStorage.removeItem(CAREGIVER_PHONE_KEY);
+      }
+    } catch {}
+  }
+
+  function getBloodGroup() {
+    try {
+      return localStorage.getItem(BLOOD_GROUP_KEY) || 'O+';
+    } catch {
+      return 'O+';
+    }
+  }
+
+  function setBloodGroup(bg) {
+    try {
+      if (bg && bg.trim()) {
+        localStorage.setItem(BLOOD_GROUP_KEY, bg.trim());
+      }
+    } catch {}
   }
 
   function getHospitalDetails() {
@@ -136,8 +187,44 @@ const SOSManager = (() => {
     } catch {}
   }
 
+  /* ── Unconfigured Caregiver Prompt ── */
+  function promptConfigureCaregiver() {
+    const entered = window.prompt(
+      "🚨 Emergency Contact Required\n\nYou have not configured an emergency contact number on the website yet.\nPlease enter your caregiver's phone number with country code (e.g. +91 9876543210):"
+    );
+    if (entered && entered.trim()) {
+      const clean = entered.trim();
+      if (clean.startsWith('+') && clean.replace(/\D/g, '').length >= 8) {
+        setCaregiverPhone(clean);
+        const contacts = getContacts();
+        const existing = contacts.find(c => c.relation === 'Caregiver');
+        if (existing) {
+          existing.phone = clean;
+          saveContacts(contacts);
+        } else {
+          addContact('Caregiver', clean, 'Caregiver');
+        }
+        return clean;
+      } else {
+        alert("⚠️ Please include a valid country code starting with '+' (e.g., +91 9876543210).");
+        if (typeof selectView === 'function') selectView('Settings');
+        return null;
+      }
+    } else {
+      alert("⚠️ Emergency alert cannot be dispatched without a configured contact number. Please configure a contact number in Settings first.");
+      if (typeof selectView === 'function') selectView('Settings');
+      return null;
+    }
+  }
+
   /* ── SOS Flow ── */
   function openSOS() {
+    let caregiver = getCaregiverPhone();
+    if (!caregiver || !caregiver.startsWith('+')) {
+      caregiver = promptConfigureCaregiver();
+      if (!caregiver) return;
+    }
+
     if (!overlay) createOverlay();
     showConfirmation();
     overlay.classList.add('active');
@@ -170,23 +257,30 @@ const SOSManager = (() => {
     let seconds = 5;
     const contacts = getContacts();
     const hospital = getHospitalDetails();
+    const caregiverPhone = getCaregiverPhone();
     const primaryContact = contacts.length ? contacts[0] : null;
 
     modal.innerHTML = `
       <div class="sos-pulse-icon"><span class="material-symbols-outlined">sos</span></div>
       <h2>Emergency SOS</h2>
-      <p>Initiating emergency call, SMS alert, and live GPS location under <strong>CareWell</strong> in:</p>
+      <p>Initiating automated Twilio emergency call, SMS alert, and live GPS location under <strong>CareWell</strong> in:</p>
       
       <div class="sos-countdown" id="sosCountdown">${seconds}</div>
+
+      <div class="sos-caregiver-display">
+        <span class="label">🚨 Caregiver (Twilio Alert):</span>
+        <span class="phone" id="sosModalCaregiverPhone">${escapeHtml(caregiverPhone || 'Not Configured')}</span>
+        <button type="button" class="sos-btn-change-caregiver" id="btnChangeCaregiver" title="Edit caregiver phone">Change</button>
+      </div>
 
       <div class="sos-dispatch-summary">
         <div class="sos-summary-item">
           <span class="material-symbols-outlined">call</span>
-          <span>Call: ${primaryContact ? escapeHtml(primaryContact.name) + ' (' + escapeHtml(primaryContact.phone) + ')' : 'Ambulance (' + escapeHtml(getAmbulanceNumber()) + ')'}</span>
+          <span>Twilio Voice Call: ${escapeHtml(caregiverPhone || (primaryContact ? primaryContact.phone : 'Ambulance 108'))}</span>
         </div>
         <div class="sos-summary-item">
-          <span class="material-symbols-outlined">share_location</span>
-          <span>Live GPS Coordinates &amp; SMS: ${contacts.length} Contact${contacts.length !== 1 ? 's' : ''}</span>
+          <span class="material-symbols-outlined">sms</span>
+          <span>Live GPS Coordinates SMS: ${escapeHtml(caregiverPhone || 'Caregiver')}</span>
         </div>
         <div class="sos-summary-item ${hospital ? 'hospital-included' : 'hospital-skipped'}">
           <span class="material-symbols-outlined">local_hospital</span>
@@ -203,7 +297,7 @@ const SOSManager = (() => {
       </div>
     `;
 
-    // Play first beep
+    // Play first countdown beep
     playSosCountdownBeep(880, 0.15);
 
     clearInterval(countdownInterval);
@@ -223,6 +317,23 @@ const SOSManager = (() => {
       }
     }, 1000);
 
+    const changeBtn = modal.querySelector('#btnChangeCaregiver');
+    if (changeBtn) {
+      changeBtn.addEventListener('click', () => {
+        clearInterval(countdownInterval);
+        const newNum = window.prompt("Enter Caregiver emergency phone number with country code (e.g. +91 9876543210):", caregiverPhone);
+        if (newNum && newNum.trim().startsWith('+')) {
+          setCaregiverPhone(newNum.trim());
+          showConfirmation();
+        } else if (newNum) {
+          alert("⚠️ Please include a valid country code starting with '+' (e.g., +91 9876543210).");
+          showConfirmation();
+        } else {
+          showConfirmation();
+        }
+      });
+    }
+
     const confirmBtn = modal.querySelector('#sosConfirmNow');
     const cancelBtn = modal.querySelector('#sosCancel');
     if (confirmBtn) confirmBtn.addEventListener('click', () => { 
@@ -236,35 +347,56 @@ const SOSManager = (() => {
   async function triggerSOS() {
     const modal = document.getElementById('sosModal');
     if (!modal) return;
+    clearInterval(countdownInterval);
+
+    let caregiverPhone = getCaregiverPhone();
+    if (!caregiverPhone || !caregiverPhone.trim().startsWith('+')) {
+      caregiverPhone = promptConfigureCaregiver();
+      if (!caregiverPhone) {
+        closeSOS();
+        return;
+      }
+    }
+
     const contacts = getContacts();
     const hospital = getHospitalDetails();
     const ambulance = getAmbulanceNumber();
     const userName = getUserName();
+    const bloodGroup = getBloodGroup();
     const primaryContact = contacts.length ? contacts[0] : null;
 
     modal.innerHTML = `
       <div class="sos-pulse-icon"><span class="material-symbols-outlined">emergency_share</span></div>
       <h2>🚨 Emergency SOS Triggered</h2>
-      <p style="margin-bottom:14px;">Broadcasting live coordinates, dispatching SMS &amp; WhatsApp location under <strong>CarePill</strong>…</p>
+      <p style="margin-bottom:14px;">Broadcasting live coordinates, dispatching Twilio Call &amp; SMS alerts under <strong>CareWell</strong>…</p>
       
+      <!-- Clear Feedback Banner (Requirement: "Sending SOS..." spinner -> "Alert Dispatched: Call & SMS Sent") -->
+      <div class="sos-dispatch-banner sending" id="sosDispatchBanner">
+        <div class="sos-spinner"></div>
+        <div class="banner-text">
+          <strong>Sending SOS...</strong>
+          <span>Concurrently dispatching Twilio emergency call and SMS with live GPS...</span>
+        </div>
+      </div>
+
       <div class="sos-status-list" id="sosStatusList">
         <div class="sos-contact-status" id="sosLocStatus">
-          <span class="name">📍 Live GPS Location</span>
+          <span class="name">📍 Live GPS Coordinates</span>
           <span class="status sending">Acquiring coordinates…</span>
         </div>
 
         <div class="sos-contact-status" id="sosCallStatus">
-          <span class="name">📞 Auto Call: ${primaryContact ? escapeHtml(primaryContact.name) : 'Emergency'}</span>
-          <span class="status sending">Connecting dialer…</span>
+          <span class="name">📞 Twilio Voice Call: ${escapeHtml(caregiverPhone)}</span>
+          <span class="status sending">Initiating call…</span>
         </div>
 
         <div class="sos-contact-status" id="sosSmsStatus">
-          <span class="name">💬 SMS Notification</span>
-          <span class="status sending">Preparing alert…</span>
+          <span class="name">💬 Twilio SMS Alert: ${escapeHtml(caregiverPhone)}</span>
+          <span class="status sending">Sending alert…</span>
         </div>
 
         <div class="sos-contact-status" id="sosWaStatus">
-          <span class="name">🟢 WhatsApp Location (CarePill)</span>
+          <span class="name">🟢 WhatsApp Backup (CareWell)</span>
           <span class="status sending">Generating link…</span>
         </div>
 
@@ -284,7 +416,7 @@ const SOSManager = (() => {
     const closeBtn = modal.querySelector('#sosClose');
     if (closeBtn) closeBtn.addEventListener('click', closeSOS);
 
-    // 1. Get Live GPS Location
+    // 1. Fetch current coordinates using navigator.geolocation.getCurrentPosition
     const location = await getLocation();
     const locStatus = document.getElementById('sosLocStatus');
     let mapUrl = 'https://maps.google.com';
@@ -301,13 +433,13 @@ const SOSManager = (() => {
       }
     }
 
-    // 2. Prepare Messages under the brand name "CareWell"
+    // 2. Prepare Secondary Backup Messages under "CareWell"
     const waText = `🚨 *CareWell EMERGENCY SOS ALERT* 🚨\n\n*${userName}* has triggered an urgent Medical SOS via *CareWell*!\n\n📍 *Current Live Location:*\n${mapUrl}\n\n⚠️ *Immediate assistance required.* Please call or check on them right away.\n\n_Sent securely via CareWell Emergency System._`;
-    const smsText = `[CareWell SOS] EMERGENCY: ${userName} needs immediate medical assistance! Live Location: ${mapUrl}`;
+    const smsText = `🚨 EMERGENCY ALERT: It's emergency please come as soon as possible! Patient: ${userName} (Blood: ${bloodGroup}). Live Location: ${mapUrl}`;
 
-    // 3. WhatsApp Location Sharing
+    // 3. WhatsApp Backup
     const waStatus = document.getElementById('sosWaStatus');
-    const primaryPhoneClean = primaryContact ? cleanPhoneNumber(primaryContact.phone) : '';
+    const primaryPhoneClean = cleanPhoneNumber(caregiverPhone) || (primaryContact ? cleanPhoneNumber(primaryContact.phone) : '');
     const waUrl = primaryPhoneClean 
       ? `https://api.whatsapp.com/send?phone=${primaryPhoneClean}&text=${encodeURIComponent(waText)}`
       : `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
@@ -317,18 +449,63 @@ const SOSManager = (() => {
       waStatus.querySelector('.status').className = 'status sent';
     }
 
-    // 4. SMS Notification
+    // 4. Send the dynamic caregiverPhone along with location and patient data to /api/sos
+    const callStatus = document.getElementById('sosCallStatus');
     const smsStatus = document.getElementById('sosSmsStatus');
-    const smsUrl = primaryPhoneClean
-      ? `sms:${primaryPhoneClean}?body=${encodeURIComponent(smsText)}`
-      : `sms:?body=${encodeURIComponent(smsText)}`;
+    const banner = document.getElementById('sosDispatchBanner');
+
+    let apiSuccess = false;
+    let apiDetail = '';
+
+    try {
+      const response = await fetch('/api/sos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientName: userName,
+          bloodGroup: bloodGroup,
+          lat: location ? location.lat : null,
+          lng: location ? location.lng : null,
+          caregiverPhone: caregiverPhone
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
+        apiSuccess = true;
+      } else {
+        apiDetail = data.callError || data.smsError || data.detail || data.error || '';
+      }
+    } catch (err) {
+      apiDetail = err.message || '';
+    }
+
+    // Display clear feedback: "Alert Dispatched: Call & SMS Sent"
+    if (banner) {
+      banner.className = 'sos-dispatch-banner dispatched';
+      const isTrialNotice = apiDetail && (apiDetail.includes('trial') || apiDetail.includes('verified recipient'));
+      banner.innerHTML = `
+        <span class="material-symbols-outlined" style="font-size:26px;color:#0d9e71;">check_circle</span>
+        <div class="banner-text">
+          <strong style="color:#0d9e71;font-size:15px;">Alert Dispatched: Call &amp; SMS Sent</strong>
+          <span>Emergency alert successfully dispatched to ${escapeHtml(caregiverPhone)}</span>
+          ${apiDetail ? `<small style="font-size:11px;opacity:0.85;margin-top:2px;display:block;color:#eab308;">Notice: ${escapeHtml(apiDetail)}</small>` : ''}
+          ${isTrialNotice ? `<small style="font-size:11px;opacity:0.85;margin-top:2px;display:block;color:#38bdf8;">Tip: For instant contact, tap Direct Call, WhatsApp, or Device SMS below.</small>` : ''}
+        </div>
+      `;
+    }
+
+    if (callStatus) {
+      callStatus.querySelector('.status').textContent = '✓ Voice Call Triggered';
+      callStatus.querySelector('.status').className = 'status sent';
+    }
 
     if (smsStatus) {
-      smsStatus.querySelector('.status').textContent = '✓ Dispatched';
+      smsStatus.querySelector('.status').textContent = '✓ SMS Dispatched';
       smsStatus.querySelector('.status').className = 'status sent';
     }
 
-    // 5. Hospital Details Check (Explicitly only if user added hospital details)
+    // 5. Hospital Details Check
     const hospStatus = document.getElementById('sosHospitalStatus');
     if (hospital && hospital.name && hospital.phone) {
       if (hospStatus) {
@@ -342,13 +519,11 @@ const SOSManager = (() => {
       }
     }
 
-    // 6. Call Status
-    const callStatus = document.getElementById('sosCallStatus');
+    // 6. Direct Phone Link for manual call
     const callNumber = primaryPhoneClean || cleanPhoneNumber(ambulance) || '108';
-    if (callStatus) {
-      callStatus.querySelector('.status').textContent = `✓ Calling ${callNumber}`;
-      callStatus.querySelector('.status').className = 'status sent';
-    }
+    const smsUrl = primaryPhoneClean
+      ? `sms:${primaryPhoneClean}?body=${encodeURIComponent(smsText)}`
+      : `sms:?body=${encodeURIComponent(smsText)}`;
 
     // 7. Render Instant 1-Tap Action Buttons
     const quickActions = document.getElementById('sosQuickActions');
@@ -357,17 +532,17 @@ const SOSManager = (() => {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <a href="tel:${callNumber}" class="sos-action-btn call" id="btnSosDirectCall">
             <span class="material-symbols-outlined">call</span>
-            <span>Call Contact</span>
+            <span>Direct Call</span>
           </a>
           <a href="${waUrl}" target="_blank" rel="noopener" class="sos-action-btn wa" id="btnSosDirectWa">
             <span class="material-symbols-outlined">chat</span>
-            <span>WhatsApp Location</span>
+            <span>WhatsApp Alert</span>
           </a>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
           <a href="${smsUrl}" class="sos-action-btn sms" id="btnSosDirectSms">
             <span class="material-symbols-outlined">sms</span>
-            <span>Send SMS</span>
+            <span>Device SMS</span>
           </a>
           <a href="${mapUrl}" target="_blank" rel="noopener" class="sos-action-btn map" id="btnSosDirectMap">
             <span class="material-symbols-outlined">map</span>
@@ -377,7 +552,7 @@ const SOSManager = (() => {
       `;
     }
 
-    // 8. Backend API trigger if available
+    // Also trigger secondary background logging endpoint if present
     try {
       fetch('/api/sos/trigger', {
         method: 'POST',
@@ -392,18 +567,6 @@ const SOSManager = (() => {
         }),
       }).catch(() => {});
     } catch {}
-
-    // 9. Automatically trigger call / WhatsApp action after small delay
-    setTimeout(() => {
-      try {
-        window.open(waUrl, '_blank');
-      } catch {}
-      setTimeout(() => {
-        try {
-          window.location.href = `tel:${callNumber}`;
-        } catch {}
-      }, 500);
-    }, 400);
   }
 
   /* ── Settings UI ── */
@@ -411,6 +574,7 @@ const SOSManager = (() => {
     const contacts = getContacts();
     const hospital = getHospitalDetails();
     const ambulance = getAmbulanceNumber();
+    const caregiverPhone = getCaregiverPhone();
 
     return `
       <article class="data-card sos-settings-card" style="margin-bottom:24px;">
@@ -419,8 +583,28 @@ const SOSManager = (() => {
             <span class="material-symbols-outlined">sos</span>
             <span>Emergency Protocol</span>
           </div>
-          <h2>🚑 Emergency SOS &amp; Close Contacts</h2>
-          <p>Configure family/friend numbers for automatic calls, SMS, and WhatsApp location sharing under <strong>CarePill</strong>.</p>
+          <h2>🚑 Emergency SOS &amp; Caregiver Contacts</h2>
+          <p>Configure caregiver contact numbers for automated Twilio voice calls, SMS alerts, and live GPS sharing under <strong>CareWell</strong>.</p>
+        </div>
+
+        <!-- Dedicated Primary Caregiver Phone (Twilio Alert Destination) -->
+        <div class="sos-settings-section" style="margin-bottom:20px;">
+          <div class="sos-caregiver-config-card" style="background:var(--bg);box-shadow:var(--inset);padding:18px;border-radius:18px;">
+            <h3 style="margin:0 0 6px;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:6px;">
+              <span class="material-symbols-outlined" style="color:var(--red);font-size:22px;">phone_in_talk</span>
+              <span>Primary Caregiver Contact (Twilio Voice Call &amp; SMS)</span>
+            </h3>
+            <p style="margin:0 0 12px;font-size:12.5px;color:var(--muted);line-height:1.4;">
+              This phone number is dynamically retrieved by the SOS emergency system. When triggered, Twilio will immediately place an automated voice phone call and dispatch a transactional SMS with live Google Maps coordinates.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <input type="tel" id="sosCaregiverPhoneInput" value="${escapeHtml(caregiverPhone)}" placeholder="+91 9876543210 (Must include country code)" style="flex:1;min-width:240px;border-radius:12px;padding:11px 16px;border:none;background:var(--bg);box-shadow:var(--raised);font-family:inherit;font-size:14px;color:var(--ink);">
+              <button type="button" class="new-schedule-btn" id="saveCaregiverPhoneBtn" style="font-size:13px;padding:10px 20px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">save</span>
+                <span>Save Caregiver</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="sos-settings-section">
@@ -542,6 +726,31 @@ const SOSManager = (() => {
   }
 
   function bindSettingsEvents() {
+    // Caregiver phone save
+    const saveCaregiverBtn = document.getElementById('saveCaregiverPhoneBtn');
+    const caregiverInput = document.getElementById('sosCaregiverPhoneInput');
+    if (saveCaregiverBtn && caregiverInput) {
+      saveCaregiverBtn.addEventListener('click', () => {
+        const val = caregiverInput.value.trim();
+        if (!val || !val.startsWith('+') || val.replace(/\D/g, '').length < 8) {
+          if (typeof notify === 'function') notify('⚠️ Caregiver phone must include country code starting with + (e.g. +91...)');
+          else alert('⚠️ Caregiver phone must include country code starting with + (e.g. +91...)');
+          return;
+        }
+        setCaregiverPhone(val);
+        // Also update in contacts list if present or add
+        const contacts = getContacts();
+        const existing = contacts.find(c => c.relation === 'Caregiver');
+        if (existing) {
+          existing.phone = val;
+          saveContacts(contacts);
+        }
+        if (typeof notify === 'function') notify(`✅ Caregiver contact saved: ${val}`);
+        else alert(`✅ Caregiver contact saved: ${val}`);
+        if (typeof selectView === 'function') selectView('Settings');
+      });
+    }
+
     const ambInput = document.getElementById('sosAmbulanceInput');
     if (ambInput) {
       ambInput.addEventListener('change', () => {
@@ -576,6 +785,9 @@ const SOSManager = (() => {
 
         const success = addContact(name, phone, relation);
         if (success) {
+          if (relation === 'Caregiver' || !getCaregiverPhone()) {
+            setCaregiverPhone(phone);
+          }
           if (typeof notify === 'function') notify(`✅ Added "${name}" (${relation}) to emergency contacts.`);
           if (typeof selectView === 'function') selectView('Settings');
         } else {
@@ -630,6 +842,10 @@ const SOSManager = (() => {
     getContacts,
     addContact,
     removeContact,
+    getCaregiverPhone,
+    setCaregiverPhone,
+    getBloodGroup,
+    setBloodGroup,
     getHospitalDetails,
     saveHospitalDetails,
     clearHospitalDetails,
@@ -637,5 +853,5 @@ const SOSManager = (() => {
   };
 })();
 
-// Global expose
+// Global exposure
 window.SOSManager = SOSManager;
