@@ -1,0 +1,5 @@
+/* Small visual alignment adjustment for the compact Vitamin D3 card. */
+.vitamin-action { margin-top: 10px; }
+
+/* Separate the MedAdhere report from the final medicine card. */
+.data-view .medadhere { margin-top: 20px; }

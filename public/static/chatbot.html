@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Chatbot</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1e1e2f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .chat-container {
+    width: 420px;
+    height: 600px;
+    background: #2a2a3d;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .chat-header {
+    background: #6c5ce7;
+    color: white;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+  }
+  .chat-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .message {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.4;
+    font-size: 14px;
+    word-wrap: break-word;
+  }
+  .user {
+    align-self: flex-end;
+    background: #6c5ce7;
+    color: white;
+    border-bottom-right-radius: 2px;
+  }
+  .bot {
+    align-self: flex-start;
+    background: #3d3d54;
+    color: #eee;
+    border-bottom-left-radius: 2px;
+  }
+  .chat-input {
+    display: flex;
+    border-top: 1px solid #3d3d54;
+  }
+  .chat-input input {
+    flex: 1;
+    border: none;
+    padding: 14px;
+    background: #2a2a3d;
+    color: white;
+    font-size: 14px;
+    outline: none;
+  }
+  .chat-input button {
+    background: #6c5ce7;
+    border: none;
+    color: white;
+    padding: 0 20px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .chat-input button:hover { background: #5a4bd4; }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">🤖 Smart Chatbot</div>
+  <div class="chat-messages" id="messages"></div>
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+// ---- 1. Conversation history ----
+// LLMs don't remember past turns by themselves, so we keep track of
+// every message here and send the whole thing with each request.
+let conversationHistory = [];
+
+// ---- 2. Core "brain": ask the real LLM for a reply ----
+async function getBotReply(message) {
+  conversationHistory.push({ role: "user", content: message });
+
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: message,
+      history: conversationHistory.slice(0, -1)
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to get response from CareWell AI");
+  }
+
+  const data = await response.json();
+  const replyText = data.reply;
+
+  conversationHistory.push({ role: "assistant", content: replyText });
+  return replyText;
+}
+
+// ---- 3. UI logic: add messages to the chat window ----
+function addMessage(text, sender) {
+  const messagesDiv = document.getElementById("messages");
+  const msg = document.createElement("div");
+  msg.classList.add("message", sender);
+  msg.textContent = text;
+  messagesDiv.appendChild(msg);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+
+  try {
+    const reply = await getBotReply(text);
+    addMessage(reply, "bot");
+  } catch (err) {
+    addMessage("Sorry, something went wrong: " + err.message, "bot");
+  }
+}
+
+// ---- 5. Greet the user when the page loads ----
+window.onload = () => {
+  addMessage("Hi! I'm your smart chatbot. Ask me anything!", "bot");
+};
+</script>
+
+</body>
+</html>

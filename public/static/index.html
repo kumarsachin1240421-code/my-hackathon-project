@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#e0e5ec">
+  <meta name="description" content="CarePill — Smart medicine reminders, dosage tracking, refill alerts, and caregiver support. Never miss a medicine again.">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>CareWell - Your Everyday Health &amp; Wellbeing Companion</title>
+  <link rel="manifest" href="manifest.json" id="manifestLink" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CareWell" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <!-- Leaflet.js for pharmacy map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="static/style.css?v=3.0.0">
+  <link rel="stylesheet" href="static/views.css?v=3.2.0">
+  <link rel="stylesheet" href="static/patient-report.css?v=3.0.0">
+  <link rel="stylesheet" href="static/medadhere-report.css?v=3.0.0">
+  <link rel="stylesheet" href="static/medadhere-fonts.css?v=3.0.0">
+  <link rel="stylesheet" href="static/layout-fixes.css?v=3.0.0">
+  <link rel="stylesheet" href="static/auth.css?v=3.0.0">
+  <link rel="stylesheet" href="static/sos.css?v=3.0.0">
+  <link rel="stylesheet" href="static/map.css?v=3.0.0">
+  <!-- QR Code Generator Library -->
+  <script src="static/qrcode.min.js" onerror="this.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'"></script>
+  <!-- Scripts -->
+  <script src="static/auth.js?v=3.0.0" defer></script>
+  <script src="static/sos.js?v=3.0.0" defer></script>
+  <script src="static/alarm.js?v=3.0.0" defer></script>
+  <script src="static/map.js?v=3.0.0" defer></script>
+  <script src="static/script.js?v=3.2.0" defer></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       GLOBAL ORBIT CAPSULE BUFFER (Requirement 4)
+       100% Solid #f4f5f6 Opaque Background
+       ═══════════════════════════════════════════ -->
+  <div class="global-loader-overlay hidden" id="globalLoader" style="display: none !important;" aria-label="Loading CareWell" role="status" aria-live="polite">
+    <div class="stage">
+      <div class="orbit">
+        <div class="core"></div>
+        <div class="pod teal"></div>
+        <div class="pod silver"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      function dismissCareWellLoader() {
+        var l = document.getElementById('globalLoader');
+        if (l && !l.classList.contains('hidden')) {
+          l.classList.add('hidden');
+        }
+      }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(dismissCareWellLoader, 150);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(dismissCareWellLoader, 150); });
+        window.addEventListener('load', dismissCareWellLoader);
+      }
+      setTimeout(dismissCareWellLoader, 1200);
+    })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════
+       CAREWELL LANDING PAGE (Matching Image 1 Reference)
+       ═══════════════════════════════════════════════ -->
+  <div class="landing-page" id="landingPage">
+
+
+    <!-- Top Navigation Bar (Matching Image 1) -->
+    <header class="landing-nav">
+      <div class="landing-brand" data-auth="signup" role="button" tabindex="0" aria-label="CareWell Home">
+        <img src="/brand-banner.png" onerror="this.src='static/brand-banner.png'" alt="CareWell - Your health, on track." class="landing-brand-logo-img h-10 w-auto object-contain" style="height:40px;width:auto;max-width:220px;object-fit:contain;display:block;">
+      </div>
+
+      <!-- Right Actions: Login CTA + Cloud Quote Badge Aligned Directly Underneath -->
+      <div class="landing-nav-actions-col">
+        <div class="landing-nav-actions">
+          <button class="btn-install-pwa" id="pwaInstallBtn" type="button" aria-label="Download or Install CareWell App" onclick="triggerPwaInstall()">
+            <span class="pwa-btn-icon">📱</span>
+            <span class="btn-text">Download App</span>
+          </button>
+          <button class="btn-login" data-auth="login" type="button" aria-label="Open Login modal">
+            <span class="material-symbols-outlined">person</span>
+            <span class="btn-text">Login</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main 3-Column Hero Section -->
+    <main class="carewell-hero-section">
+      <!-- Left Column: Headline, Subtext, CTA, Stats -->
+      <div class="hero-left-col">
+        <div class="hero-pill-tag">
+          <span>💙</span>
+          <span>A Healthier Tomorrow, Together</span>
+        </div>
+
+        <h2 class="carewell-hero-headline">
+          Your Everyday
+          <span class="accent-blue">Health &amp; Wellbeing</span>
+          Companion
+        </h2>
+
+        <p class="carewell-hero-subtext">
+          CareWell helps you manage your medicines, track your health, get timely reminders and stay connected with your loved ones — for a healthier, happier you.
+        </p>
+
+        <!-- Get Started CTA Button (Requirement 6) -->
+        <button class="carewell-cta-btn" id="getStartedHeroBtn" data-auth="signup" type="button" aria-label="Get Started with CareWell">
+          <span>Get Started</span>
+          <span class="material-symbols-outlined" style="font-size:19px;">arrow_forward</span>
+        </button>
+
+        <!-- Live Statistics Row -->
+        <div class="carewell-stats-row">
+          <div class="carewell-stat-item">
+            <strong>4.8 ★</strong>
+            <span>User Rating</span>
+          </div>
+          <div class="carewell-stat-item">
+            <strong>100%</strong>
+            <span>Better Adherence</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Column: Feathered Doctor & Patient Visual (Clean Alpha Mask) -->
+      <div class="hero-center-col">
+        <div class="hero-ambient-blob"></div>
+
+        <div class="hero-arch-wrap">
+          <img src="static/hero-care.jpg" onerror="this.src='hero-care.jpg'" alt="CareWell Doctor assisting happy senior patient" class="hero-arch-img" loading="eager">
+        </div>
+      </div>
+
+      <!-- Right Column: 4 Neumorphic Feature Cards -->
+      <div class="hero-right-col" role="region" aria-label="CareWell Key Features">
+        <!-- Relocated Badge Element: Directly Above Never Miss a Dose Feature Card -->
+        <div class="top-quote-cloud-pill" aria-label="Daily Inspiration Quote" style="align-self: flex-start; margin-bottom: 2px;">
+          <span class="cloud-pill-emoji">💚</span>
+          <div class="cloud-pill-content">
+            <span class="cloud-pill-sub">Small Steps</span>
+            <strong class="cloud-pill-title">Healthier Tomorrows</strong>
+          </div>
+        </div>
+
+        <!-- Card 1: Never Miss a Dose -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#2563eb;background:#eff6ff;">
+            <span class="material-symbols-outlined">medication</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Never Miss a Dose</strong>
+            <p>Smart reminders for a healthier you.</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Track Your Progress -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#0284c7;background:#f0f9ff;">
+            <span class="material-symbols-outlined">bar_chart</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Track Your Progress</strong>
+            <p>See your health journey over time.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Stay Connected -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#2563eb;background:#eff6ff;">
+            <span class="material-symbols-outlined">group</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>Stay Connected</strong>
+            <p>Keep your loved ones in the loop.</p>
+          </div>
+        </div>
+
+        <!-- Card 4: A Healthier You -->
+        <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
+          <div class="card-widget-icon" style="color:#059669;background:#ecfdf5;">
+            <span class="material-symbols-outlined">verified_user</span>
+          </div>
+          <div class="card-widget-text">
+            <strong>A Healthier You</strong>
+            <p>Build better habits for a brighter tomorrow.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         PUBLIC COMMUNITY TESTIMONIALS SECTION (Requirement 2)
+         ═══════════════════════════════════════════ -->
+    <section class="landing-testimonials-section" id="landingTestimonialsSection" aria-label="What Our Users Say">
+      <div class="testimonials-header">
+        <span class="testimonials-badge">💬 Community Voices</span>
+        <h2 class="testimonials-title">What Our Users Say</h2>
+        <p class="testimonials-sub">Trusted by thousands of families, seniors, and caregivers for smart, stress-free health management.</p>
+      </div>
+
+      <!-- Testimonials Dynamic Grid / Carousel -->
+      <div class="testimonials-grid" id="landingTestimonialsGrid">
+        <!-- Rendered dynamically by script.js / default seed fallback -->
+      </div>
+    </section>
+
+    <!-- Landing Footer with Support / Contact Trigger -->
+    <footer class="landing-footer">
+      <div class="landing-footer-actions">
+        <button type="button" class="btn-contact-team" id="openContactTeamBtn" aria-label="Open Contact Our Team Dialog">
+          <span class="material-symbols-outlined">support_agent</span>
+          <span>Contact Our Team</span>
+        </button>
+      </div>
+      <div class="carewell-bottom-ribbon">
+        CARE TODAY • WELLBEING TOMORROW
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       CONTACT OUR TEAM MODAL OVERLAY (Requirement 1)
+       ═══════════════════════════════════════════ -->
+  <div class="contact-modal-overlay" id="contactTeamModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="contact-modal-card">
+      <button class="auth-modal-close" id="closeContactTeamBtn" aria-label="Close contact dialog">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div class="contact-modal-header">
+        <div class="contact-header-badge">
+          <span class="material-symbols-outlined">support_agent</span>
+        </div>
+        <h2>Contact CareWell Team</h2>
+        <p>Our dedicated healthcare &amp; technical support desk is available 24/7 to assist you.</p>
+      </div>
+
+      <div class="contact-channels-list">
+        <!-- Channel 1: Email -->
+        <div class="contact-channel-item">
+          <div class="channel-icon-wrap email">
+            <span class="material-symbols-outlined">mail</span>
+          </div>
+          <div class="channel-info">
+            <label>Official Support Email</label>
+            <a href="mailto:support@carewell.com" class="channel-link" id="contactEmailLink">support@carewell.com</a>
+          </div>
+          <button type="button" class="btn-copy-contact" onclick="copyContactValue('support@carewell.com', this)" title="Copy email address" aria-label="Copy email address">
+            <span class="material-symbols-outlined">content_copy</span>
+            <span>Copy</span>
+          </button>
+        </div>
+
+        <!-- Channel 2: Phone -->
+        <div class="contact-channel-item">
+          <div class="channel-icon-wrap phone">
+            <span class="material-symbols-outlined">phone_in_talk</span>
+          </div>
+          <div class="channel-info">
+            <label>Emergency &amp; Help Desk Phone</label>
+            <a href="tel:+919876543210" class="channel-link" id="contactPhoneLink">+91 98765 43210</a>
+          </div>
+          <button type="button" class="btn-copy-contact" onclick="copyContactValue('+91 98765 43210', this)" title="Copy phone number" aria-label="Copy phone number">
+            <span class="material-symbols-outlined">content_copy</span>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="contact-modal-footer">
+        <p>💡 Tip: For medical emergencies, you can also use our in-app 1-Click SOS button once logged in.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Interactive Auth & Feature Modal Overlay -->
+  <div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="auth-modal"></div>
+  </div>
+
+  <!-- Interactive Schedule Creation Modal -->
+  <div class="schedule-modal-overlay" id="scheduleModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="schedule-modal">
+      <button class="auth-modal-close" id="scheduleCloseBtn" aria-label="Close schedule form">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="auth-modal-header">
+        <h2>New Medication Schedule</h2>
+        <p>Add a prescribed medicine, dosage timings, and doctor notes</p>
+      </div>
+
+      <div class="auth-alert error" id="schedError"><span class="material-symbols-outlined">error</span><span id="schedErrorText"></span></div>
+      <div class="auth-alert success" id="schedSuccess"><span class="material-symbols-outlined">check_circle</span><span id="schedSuccessText"></span></div>
+
+      <form id="newScheduleForm" autocomplete="off">
+        <div class="sched-form-grid">
+          <div class="auth-field">
+            <label for="schedMedName">Medicine Name *</label>
+            <input type="text" id="schedMedName" placeholder="e.g. Metformin / Amoxicillin" required>
+          </div>
+
+          <div class="auth-field">
+            <label for="schedDosage">Dosage &amp; Form *</label>
+            <input type="text" id="schedDosage" placeholder="e.g. 500mg · 1 tablet" required>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="schedDoctorRx">Doctor’s Prescription &amp; Notes</label>
+          <textarea id="schedDoctorRx" rows="2" class="sched-textarea" placeholder="e.g. Prescribed by Dr. A. Sharma: Take twice daily after meals. Avoid skipping morning dose."></textarea>
+        </div>
+
+        <div class="sched-form-grid">
+          <div class="auth-field clock-picker-field">
+            <label for="schedTime">Scheduled Time *</label>
+            <input type="hidden" id="schedTime" name="schedTime" value="08:00 AM" required>
+            
+            <div class="digital-clock-picker" id="digitalClockPicker" role="group" aria-label="Digital Clock Time Picker">
+              <!-- Hour Stepper & Display -->
+              <div class="clock-unit-col">
+                <button type="button" class="clock-stepper-btn" id="clockHourUp" aria-label="Increase Hour">▲</button>
+                <input type="text" id="clockHourInput" class="clock-digit-input" value="08" maxlength="2" inputmode="numeric" aria-label="Hour (1-12)">
+                <button type="button" class="clock-stepper-btn" id="clockHourDown" aria-label="Decrease Hour">▼</button>
+              </div>
+
+              <!-- Colon Separator -->
+              <div class="clock-separator-col">
+                <span class="clock-separator">:</span>
+              </div>
+
+              <!-- Minute Stepper & Display -->
+              <div class="clock-unit-col">
+                <button type="button" class="clock-stepper-btn" id="clockMinUp" aria-label="Increase Minute">▲</button>
+                <input type="text" id="clockMinInput" class="clock-digit-input" value="00" maxlength="2" inputmode="numeric" aria-label="Minute (00-59)">
+                <button type="button" class="clock-stepper-btn" id="clockMinDown" aria-label="Decrease Minute">▼</button>
+              </div>
+
+              <!-- AM / PM Segmented Toggle -->
+              <div class="clock-period-col">
+                <button type="button" class="clock-period-btn active" id="clockBtnAM" data-period="AM" aria-label="Set AM">AM</button>
+                <button type="button" class="clock-period-btn" id="clockBtnPM" data-period="PM" aria-label="Set PM">PM</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="schedInstructions">Meal Instructions</label>
+            <input type="text" id="schedInstructions" placeholder="e.g. Take with food / With water">
+          </div>
+        </div>
+
+        <div class="sched-form-grid">
+          <div class="auth-field">
+            <label for="schedFrequency">Frequency</label>
+            <select id="schedFrequency" class="sched-select">
+              <option value="Daily" selected>Daily</option>
+              <option value="Twice daily">Twice daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="As needed">As needed</option>
+            </select>
+          </div>
+
+          <div class="auth-field">
+            <label for="schedStock">Initial Stock (Tablets/Units)</label>
+            <input type="number" id="schedStock" min="1" max="500" value="30">
+          </div>
+        </div>
+
+        <div class="sched-icon-row">
+          <label>Icon Style:</label>
+          <div class="sched-icons-picker" id="schedIconPicker">
+            <label class="icon-radio active"><input type="radio" name="icon" value="medication" checked><span class="material-symbols-outlined">medication</span></label>
+            <label class="icon-radio"><input type="radio" name="icon" value="water_drop"><span class="material-symbols-outlined">water_drop</span></label>
+            <label class="icon-radio"><input type="radio" name="icon" value="wb_sunny"><span class="material-symbols-outlined">wb_sunny</span></label>
+            <label class="icon-radio"><input type="radio" name="icon" value="favorite"><span class="material-symbols-outlined">favorite</span></label>
+            <label class="icon-radio"><input type="radio" name="icon" value="vital_signs"><span class="material-symbols-outlined">vital_signs</span></label>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-submit" id="saveScheduleBtn" style="margin-top:14px;">
+          <span class="material-symbols-outlined">add_task</span>
+          <span>Save Medication Schedule</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN APP SHELL (shown after authentication)
+       ═══════════════════════════════════════════ -->
+  <div id="appShell" style="display:none">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="sidebar-brand-header" style="display:flex;align-items:center;padding:0 4px 18px;flex-shrink:0;">
+        <img src="/brand-banner.png" onerror="this.src='static/brand-banner.png'" alt="CareWell - Your health, on track." style="height:36px;width:auto;max-width:180px;object-fit:contain;display:block;">
+      </div>
+      <div class="profile" id="sidebarProfile">
+        <div class="avatar" id="sidebarAvatar" aria-label="Health Profile Avatar" title="Click to update profile photo">
+          <span class="material-symbols-outlined avatar-icon" id="sidebarAvatarIcon">person</span>
+          <img class="avatar-photo" id="sidebarAvatarImg" alt="Profile" style="display:none;">
+          <div class="avatar-badge" title="Add / change picture"><span class="material-symbols-outlined">photo_camera</span></div>
+        </div>
+        <div class="profile-info-block">
+          <!-- Click-to-Edit Name Feature (Requirement 5) -->
+          <div class="user-name-wrapper" id="userNameWrapper">
+            <div class="user-name-row" id="userNameRow">
+              <strong id="sidebarUserName" class="editable-name" title="Click to edit name">Alex Johnson</strong>
+              <button type="button" class="name-edit-pencil-btn" id="editNamePencilBtn" title="Edit name" aria-label="Edit name">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+            </div>
+            <div class="name-inline-edit" id="nameInlineEdit" style="display:none;">
+              <input type="text" id="inlineNameInput" class="inline-name-input" maxlength="35" placeholder="Enter name">
+              <button type="button" class="name-action-btn save" id="saveInlineNameBtn" title="Save name" aria-label="Save name">
+                <span class="material-symbols-outlined">check</span>
+              </button>
+              <button type="button" class="name-action-btn cancel" id="cancelInlineNameBtn" title="Cancel" aria-label="Cancel editing">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+          <small id="sidebarUserSubtitle">Medication plan: Active</small>
+          <div><button type="button" class="profile-upload-link" id="sidebarAddPhotoBtn">Add Profile Picture</button></div>
+        </div>
+      </div>
+      <nav class="side-nav">
+        <button class="nav-item active" data-view="Today"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
+        <button class="nav-item" data-view="Schedule"><span class="material-symbols-outlined">event_note</span>Schedule</button>
+        <button class="nav-item" data-view="CounsellingSession"><span class="material-symbols-outlined">psychology</span>Counselling Session</button>
+        <button class="nav-item" data-view="Refills"><span class="material-symbols-outlined">inventory_2</span>Refills</button>
+        <button class="nav-item" data-view="Reports"><span class="material-symbols-outlined">analytics</span>Reports</button>
+        <button class="nav-item" data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button>
+        <button class="nav-item" data-view="HospitalScanner"><span class="material-symbols-outlined">document_scanner</span>Hospital Scanner</button>
+        <button class="nav-item" data-view="Settings"><span class="material-symbols-outlined">settings</span>Settings</button>
+      </nav>
+      <button class="emergency" id="emergency"><span class="material-symbols-outlined">sos</span>Emergency</button>
+      <button class="nav-item" data-auth="logout" style="margin-top:12px;color:var(--red)"><span class="material-symbols-outlined">logout</span>Logout</button>
+      <small class="version">v2.0.0</small>
+    </aside>
+    <div class="app">
+      <header class="mobile-header">
+        <button class="avatar menu-button" id="menuButton" aria-label="Open navigation"><span class="material-symbols-outlined">menu</span></button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <img src="/brand-banner.png" onerror="this.src='static/brand-banner.png'" style="height:32px;width:auto;max-width:140px;object-fit:contain;" alt="CareWell">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="round-button btn-install-pwa-round" id="mobilePwaInstallBtn" onclick="triggerPwaInstall()" title="Download / Install App" aria-label="Download App" style="display:inline-flex;align-items:center;justify-content:center;font-size:15px;">📱</button>
+          <button class="round-button" id="appThemeToggleBtn" title="Toggle Theme" aria-label="Toggle Dark/Light Mode"><span class="material-symbols-outlined">dark_mode</span></button>
+          <button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button>
+        </div>
+      </header>
+      <main>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow" id="viewName">YOUR HEALTH, ON TRACK</p>
+            <h1>Today's Schedule</h1>
+            <p class="date">Your medication plan for today</p>
+          </div>
+          <div class="page-heading-right">
+            <button class="new-schedule-btn" id="newScheduleBtn" type="button" aria-label="Create New Schedule">
+              <span class="material-symbols-outlined">add_circle</span>
+              <span>New Schedule</span>
+            </button>
+            <div class="pending clickable" id="pendingBadge" role="button" tabindex="0" title="Click to view pending medications" aria-label="0 Pending doses - click to view">
+              <i></i><span id="pendingCount">0 Pending</span>
+            </div>
+          </div>
+        </section>
+        <section class="progress-card" aria-label="Daily progress"><div><span>Daily progress</span><strong id="progressText">0 of 0 taken</strong></div><div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%;"></div></div></section>
+        <section class="medicine-list" aria-label="Today's medicines"></section>
+
+        <!-- Main Dynamic View Container (Schedule / CounsellingSession / Refills / Reports / Pharmacy / Settings) -->
+        <section class="data-view" id="dataView" hidden aria-live="polite"></section>
+      </main>
+      <nav class="bottom-nav" aria-label="Mobile navigation">
+        <button class="active" data-view="Today"><span class="material-symbols-outlined">medication</span>Today</button>
+        <button data-view="Schedule"><span class="material-symbols-outlined">event_note</span>Schedule</button>
+        <button data-view="CounsellingSession"><span class="material-symbols-outlined">psychology</span>Counselling</button>
+        <button data-view="Reports"><span class="material-symbols-outlined">analytics</span>Reports</button>
+        <button data-view="Pharmacy"><span class="material-symbols-outlined">local_pharmacy</span>Pharmacy</button>
+      </nav>
+
+      <!-- ═══════════════════════════════════════════
+           FLOATING 3D "CAREWELL AI" BOT & CHAT DRAWER (Authenticated Floating Companion)
+           ═══════════════════════════════════════════ -->
+      <div class="carewell-bot-container" id="carewellBotContainer" style="display:none !important;position:fixed !important;bottom:24px !important;right:24px !important;z-index:99999 !important;">
+        <!-- Speech Bubble Above Robot Head -->
+        <div class="bot-speech-bubble" id="botSpeechBubble">
+          <span>Here for a</span>
+          <strong style="color:#10b981;">Healthier You! 💚</strong>
+        </div>
+
+        <!-- 3D Character Avatar (White matte body + Glowing emerald heart face + Waving hand) -->
+        <div class="bot-character-wrap" id="botCharacterAvatar" role="button" tabindex="0" title="Click to chat with CareWell AI" aria-label="Open CareWell AI Voice Assistant">
+          <div class="bot-avatar-3d">
+            <svg viewBox="0 0 160 190" width="82" height="94" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Ambient Drop Shadow -->
+              <ellipse cx="80" cy="180" rx="46" ry="8" fill="rgba(0, 0, 0, 0.15)"/>
+              
+              <!-- Robot Legs -->
+              <rect x="58" y="145" width="18" height="24" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+              <rect x="84" y="145" width="18" height="24" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+              <ellipse cx="67" cy="168" rx="11" ry="5" fill="#e2e8f0"/>
+              <ellipse cx="93" cy="168" rx="11" ry="5" fill="#e2e8f0"/>
+
+              <!-- Body (Glossy Neumorphic White) -->
+              <rect x="42" y="90" width="76" height="64" rx="32" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"/>
+              <path d="M48 100 Q80 108 112 100" stroke="#f1f5f9" stroke-width="2"/>
+
+              <!-- CareWell Chest Logo -->
+              <circle cx="80" cy="116" r="12" stroke="url(#botGrad)" stroke-width="3.5" stroke-dasharray="55 20"/>
+              <path d="M76 119 L80 123 L87 114" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="80" y="136" text-anchor="middle" font-size="7" font-weight="800" fill="#1e293b" font-family="Inter, sans-serif">CareWell</text>
+
+              <!-- Glowing Green Belly Button / Sensor -->
+              <circle cx="80" cy="144" r="5" fill="#10b981"/>
+              <circle cx="80" cy="144" r="7" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.8"/>
+
+              <!-- Left Arm (Resting) -->
+              <path d="M42 106 C30 114 26 128 32 140 C34 144 38 144 42 138 C44 132 44 122 46 114" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+
+              <!-- Right Waving Arm (Animated) -->
+              <g class="bot-waving-arm">
+                <path d="M118 106 C134 98 142 82 138 68 C136 64 132 64 130 70 C126 80 122 92 116 104" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                <!-- Waving Hand Fingers -->
+                <circle cx="138" cy="65" r="5" fill="#10b981"/>
+                <circle cx="144" cy="67" r="4" fill="#10b981"/>
+                <circle cx="133" cy="63" r="4" fill="#10b981"/>
+                <!-- Animated Sound / Signal Arcs -->
+                <path d="M148 56 A 14 14 0 0 1 154 70" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M153 50 A 20 20 0 0 1 160 70" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 3"/>
+              </g>
+
+              <!-- Head (Neumorphic White Helmet with Heart-Shaped Emerald Screen) -->
+              <rect x="30" y="16" width="100" height="80" rx="38" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"/>
+              
+              <!-- Heart Screen Inset (Emerald Glow) -->
+              <path d="M80 84 C48 64 38 48 38 36 C38 24 48 18 58 18 C66 18 74 22 80 28 C86 22 94 18 102 18 C112 18 122 24 122 36 C122 48 112 64 80 84 Z" fill="#047857" stroke="#10b981" stroke-width="3"/>
+              <path d="M80 80 C50 62 42 48 42 38 C42 28 50 22 58 22 C65 22 72 26 80 32 C88 26 95 22 102 22 C110 22 118 28 118 38 C118 48 110 62 80 80 Z" fill="#065f46"/>
+
+              <!-- Glowing Cute Eyes (Happy Curved Arcs) -->
+              <path d="M56 46 Q64 36 72 46" stroke="#6ee7b7" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+              <path d="M88 46 Q96 36 104 46" stroke="#6ee7b7" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+
+              <!-- Cheerful Glowing Smile -->
+              <path d="M72 58 Q80 66 88 58" stroke="#a7f3d0" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+              <defs>
+                <linearGradient id="botGrad" x1="68" y1="104" x2="92" y2="128" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#2563eb"/>
+                  <stop offset="1" stop-color="#10b981"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <div class="bot-bottom-badge">
+            <span class="material-symbols-outlined" style="font-size:12px;">mic</span>
+            <span>Always here to help! 🤍</span>
+          </div>
+        </div>
+
+        <!-- Sleek Neumorphic Chat Drawer (CareBot) -->
+        <div class="carewell-chat-drawer" id="carewellChatDrawer" role="dialog" aria-modal="true" aria-hidden="true">
+          <!-- Drawer Header -->
+          <div class="chat-drawer-header">
+            <div class="chat-header-brand">
+              <div class="chat-brand-logo">
+                <span class="material-symbols-outlined" style="color:#10b981;font-size:22px;">smart_toy</span>
+              </div>
+              <div>
+                <strong>CareBot 👋</strong>
+                <span class="chat-brand-sub">Your 24/7 healthcare companion</span>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button type="button" class="chat-ctrl-btn" id="minimizeChatBtn" title="Minimize">_</button>
+              <button type="button" class="chat-ctrl-btn" id="closeChatBtn" title="Close">✕</button>
+            </div>
+          </div>
+
+          <!-- Drawer Body: Messages & Quick Action Pills -->
+          <div class="chat-drawer-body" id="chatDrawerBody">
+            <!-- Initial Welcome Message from CareBot -->
+            <div class="chat-msg-row bot-msg-row">
+              <div class="chat-msg-avatar" title="CareBot">
+                <span class="material-symbols-outlined" style="font-size:18px;color:#10b981;">smart_toy</span>
+              </div>
+              <div class="chat-msg-bubble bot">
+                Hi! I'm CareBot 👋 Ask me anything about your health, medicines, hospitals or appointments.
+              </div>
+            </div>
+
+            <!-- 5 Quick Action Prompt Chips -->
+            <div class="chat-quick-actions" id="chatQuickActionPills">
+              <button type="button" class="chat-action-pill" data-prompt="What are the symptoms of flu?">
+                <div class="pill-icon">🌡️</div>
+                <span>What are the symptoms of flu?</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="Find a nearby hospital">
+                <div class="pill-icon">🏥</div>
+                <span>Find a nearby hospital</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="How to take Paracetamol?">
+                <div class="pill-icon">💊</div>
+                <span>How to take Paracetamol?</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="Book an appointment">
+                <div class="pill-icon">📅</div>
+                <span>Book an appointment</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="Show my upcoming medicines">
+                <div class="pill-icon">⏰</div>
+                <span>Show my upcoming medicines</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Drawer Footer: Text Input, Voice Mic, Send Button -->
+          <div class="chat-drawer-footer">
+            <button type="button" class="chat-voice-btn" id="chatVoiceMicBtn" title="Speak Voice Command">
+              <span class="material-symbols-outlined" id="chatMicIcon">mic</span>
+            </button>
+            <div class="chat-input-wrap">
+              <input type="text" id="chatDrawerInput" class="chat-text-input" placeholder="Type your question..." autocomplete="off">
+            </div>
+            <button type="button" class="chat-send-btn" id="chatDrawerSendBtn" title="Send message" aria-label="Send message">
+              <span class="chat-send-chevron">&gt;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       COUNSELLING SESSION DOCTOR BOOKING MODAL (Req 3)
+       ═══════════════════════════════════════════ -->
+  <div class="booking-modal-overlay" id="doctorBookingModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="booking-modal">
+      <button class="auth-modal-close" id="closeDoctorBookingBtn" aria-label="Close booking modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="auth-modal-header">
+        <h2 id="bookingDoctorName">Book Counselling Session</h2>
+        <p id="bookingDoctorTitle">1-on-1 Confidential Health Consultation</p>
+      </div>
+
+      <form id="doctorBookingForm" autocomplete="off">
+        <input type="hidden" id="bookingDoctorId" value="">
+
+        <!-- Session Type Selector -->
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted);">Select Consultation Mode:</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <label class="icon-radio active" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Video Call" checked>
+              <span class="material-symbols-outlined" style="font-size:22px;color:var(--blue);">videocam</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Video</small>
+            </label>
+            <label class="icon-radio" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Audio Call">
+              <span class="material-symbols-outlined" style="font-size:22px;color:#10b981;">call</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Audio</small>
+            </label>
+            <label class="icon-radio" style="flex-direction:column;padding:8px;text-align:center;border-radius:12px;cursor:pointer;">
+              <input type="radio" name="sessionMode" value="Secure Chat">
+              <span class="material-symbols-outlined" style="font-size:22px;color:#8b5cf6;">chat</span>
+              <small style="font-weight:700;font-size:11px;margin-top:2px;">Chat</small>
+            </label>
+          </div>
+        </div>
+
+        <div class="sched-form-grid">
+          <div class="auth-field">
+            <label for="bookingDate">Preferred Date *</label>
+            <input type="date" id="bookingDate" required>
+          </div>
+          <div class="auth-field">
+            <label for="bookingTimeSlot">Time Slot *</label>
+            <select id="bookingTimeSlot" class="sched-select" required>
+              <option value="10:00 AM">10:00 AM (Morning)</option>
+              <option value="11:30 AM">11:30 AM (Morning)</option>
+              <option value="02:00 PM">02:00 PM (Afternoon)</option>
+              <option value="04:00 PM" selected>04:00 PM (Evening)</option>
+              <option value="06:30 PM">06:30 PM (Evening)</option>
+              <option value="08:00 PM">08:00 PM (Night)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="bookingNotes">Concern / Key Topics (Optional)</label>
+          <textarea id="bookingNotes" rows="2" class="sched-textarea" placeholder="e.g. Work stress, sleep trouble, anxiety management..."></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;padding:10px 14px;border-radius:12px;background:var(--bg);box-shadow:var(--inset);">
+          <span style="font-size:12.5px;color:var(--muted);font-weight:600;">Consultation Fee:</span>
+          <strong id="bookingFeeSummary" style="font-size:16px;color:var(--blue);">₹999</strong>
+        </div>
+
+        <button type="submit" class="auth-submit" id="confirmBookingBtn" style="margin-top:10px;">
+          <span class="material-symbols-outlined">event_available</span>
+          <span>Confirm &amp; Book Session</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MEDICINE REMINDER FLOATING NOTIFICATION POPUP (Requirement 3)
+       ═══════════════════════════════════════════ -->
+  <div class="carepill-alarm-popup-overlay" id="alarmPopupOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="carepill-alarm-popup-card floating-reminder-card">
+      <button class="alarm-popup-close-btn" id="popupDismissCrossBtn" type="button" aria-label="Dismiss reminder">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div class="alarm-popup-icon-ring">
+        <span class="material-symbols-outlined">notifications_active</span>
+      </div>
+
+      <span class="alarm-status-pill">
+        Scheduled Medicine Due Now
+      </span>
+
+      <!-- Medicine Name -->
+      <h2 id="alarmPopupMedName" class="alarm-med-name">Atorvastatin</h2>
+
+      <!-- Medicine Dosage & Scheduled Time -->
+      <div class="alarm-med-badges">
+        <span class="alarm-badge dosage-badge">
+          <span class="material-symbols-outlined">medication</span>
+          <span id="alarmPopupDosage">20mg · 1 tablet</span>
+        </span>
+        <span class="alarm-badge time-badge">
+          <span class="material-symbols-outlined">schedule</span>
+          <span id="alarmPopupTime">08:00 AM</span>
+        </span>
+      </div>
+
+      <p id="alarmPopupInstructions" class="alarm-instructions">Take with food as prescribed</p>
+      <p id="alarmPopupRx" class="alarm-rx" style="display:none;"></p>
+
+      <!-- 3 Functional Buttons: Taken, Snooze, Dismiss -->
+      <div class="alarm-popup-actions-trio">
+        <button type="button" class="btn-alarm-taken" id="popupTakenBtn" aria-label="Mark medicine as taken">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span>Taken</span>
+        </button>
+        <button type="button" class="btn-alarm-snooze" id="popupSnoozeBtn" aria-label="Snooze reminder for 10 minutes">
+          <span class="material-symbols-outlined">snooze</span>
+          <span>Snooze</span>
+        </button>
+        <button type="button" class="btn-alarm-dismiss" id="popupDismissBtn" aria-label="Dismiss reminder">
+          <span class="material-symbols-outlined">cancel</span>
+          <span>Dismiss</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Profile Picture Upload Modal (Camera & Gallery Options) -->
+  <div class="profile-pic-modal-overlay" id="profilePicModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="profile-pic-modal">
+      <button class="auth-modal-close" id="profilePicCloseBtn" aria-label="Close profile picture dialog">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="auth-modal-header" style="text-align:center;">
+        <div class="profile-modal-preview">
+          <div class="avatar-preview-box" id="avatarModalPreview">
+            <span class="material-symbols-outlined" id="avatarPreviewIcon">person</span>
+            <img id="avatarPreviewImg" alt="Avatar preview" style="display:none;">
+          </div>
+        </div>
+        <h2>Add Profile Picture</h2>
+        <p>Choose an option below to update your profile photo</p>
+      </div>
+
+      <div class="profile-options-grid">
+        <!-- Option 1: Camera -->
+        <button type="button" class="profile-option-btn camera-opt" id="optCameraBtn">
+          <div class="profile-option-icon"><span class="material-symbols-outlined">photo_camera</span></div>
+          <div class="profile-option-info">
+            <strong>Camera</strong>
+            <small>Take a new photo with device camera</small>
+          </div>
+          <span class="material-symbols-outlined opt-arrow">arrow_forward</span>
+        </button>
+
+        <!-- Option 2: Gallery -->
+        <button type="button" class="profile-option-btn gallery-opt" id="optGalleryBtn">
+          <div class="profile-option-icon"><span class="material-symbols-outlined">photo_library</span></div>
+          <div class="profile-option-info">
+            <strong>Gallery</strong>
+            <small>Select from photos or device storage</small>
+          </div>
+          <span class="material-symbols-outlined opt-arrow">arrow_forward</span>
+        </button>
+      </div>
+
+      <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" aria-hidden="true">
+      <input type="file" id="galleryInput" accept="image/*" style="display:none;" aria-hidden="true">
+
+      <div class="profile-modal-actions" id="profileModalActions" style="display:none;margin-top:16px;">
+        <button type="button" class="profile-remove-btn" id="removeAvatarBtn">
+          <span class="material-symbols-outlined">delete</span>
+          <span>Remove Photo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Viewfinder Modal -->
+  <div class="camera-live-modal-overlay" id="cameraLiveModalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="camera-live-modal">
+      <div class="camera-modal-header">
+        <h3 id="cameraModalTitle">Take Live Photo</h3>
+        <button type="button" class="auth-modal-close" id="closeLiveCameraBtn" aria-label="Close camera" style="position:static;color:#fff;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="camera-video-container">
+        <video id="cameraLiveFeed" class="camera-video-feed" autoplay playsinline muted></video>
+        <canvas id="cameraSnapshotCanvas" style="display:none;"></canvas>
+      </div>
+      <div class="camera-controls-bar">
+        <button type="button" class="btn-switch-cam" id="switchCameraFacingBtn" title="Switch Camera">
+          <span class="material-symbols-outlined">flip_camera_ios</span>
+        </button>
+        <button type="button" class="btn-snap-photo" id="snapLivePhotoBtn">
+          <span class="material-symbols-outlined">photo_camera</span>
+          <span>Capture Photo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Reports File Management -->
+  <input type="file" id="reportFileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;" aria-hidden="true">
+  <input type="file" id="reportCameraInput" accept="image/*" capture="environment" style="display:none;" aria-hidden="true">
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Mobile sidebar drawer -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Progressive Web App (PWA) Install Manager & Service Worker Registration -->
+  <script>
+    let deferredPrompt = null;
+
+    // Capture the browser's beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('CareWell beforeinstallprompt captured successfully');
+      const installBtns = document.querySelectorAll('.btn-install-pwa, #pwaInstallBtn, #mobilePwaInstallBtn');
+      installBtns.forEach(btn => {
+        btn.style.display = 'inline-flex';
+      });
+    });
+
+    // Handle install button clicks
+    async function triggerPwaInstall() {
+      // Check if already in standalone app mode
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        if (typeof showToast === 'function') {
+          showToast('CareWell is already installed as an app on your device! 🎉');
+        } else {
+          alert('CareWell is already installed as an app on your device! 🎉');
+        }
+        return;
+      }
+
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('CareWell PWA install outcome:', outcome);
+        if (outcome === 'accepted') {
+          deferredPrompt = null;
+        }
+      } else {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          if (typeof showToast === 'function') {
+            showToast('To install CareWell on iOS: tap the Share button ⎋ at bottom, then tap "Add to Home Screen" ➕');
+          } else {
+            alert('To install CareWell on iOS:\n1. Tap the Share button (⎋) in Safari\n2. Select "Add to Home Screen" (➕)');
+          }
+        } else {
+          if (typeof showToast === 'function') {
+            showToast('To install CareWell: open your browser menu (⋮) and select "Install CareWell" or "Add to Home Screen".');
+          } else {
+            alert('To install CareWell:\n1. Open your browser menu (⋮) at top-right\n2. Select "Install CareWell" or "Add to Home Screen"');
+          }
+        }
+      }
+    }
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      console.log('CareWell App successfully installed');
+      if (typeof showToast === 'function') {
+        showToast('CareWell App installed successfully! 🎉');
+      }
+    });
+
+    // Service Worker Registration with relative scope for subpath hosting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .then((reg) => {
+            console.log('CareWell Service Worker Registered with scope:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('Relative ./sw.js registration failed, trying fallback sw.js:', err);
+            navigator.serviceWorker.register('sw.js')
+              .then((reg) => console.log('CareWell Service Worker Registered fallback:', reg.scope))
+              .catch((err2) => console.error('Service Worker Registration Error:', err2));
+          });
+      });
+    }
+  </script>
+</body>
+</html>
+
