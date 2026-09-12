@@ -31,6 +31,8 @@
   <link rel="stylesheet" href="static/auth.css?v=3.0.0">
   <link rel="stylesheet" href="static/sos.css?v=3.0.0">
   <link rel="stylesheet" href="static/map.css?v=3.0.0">
+  <!-- QR Code Generator Library -->
+  <script src="static/qrcode.min.js" onerror="this.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'"></script>
   <!-- Scripts -->
   <script src="static/auth.js?v=3.0.0" defer></script>
   <script src="static/sos.js?v=3.0.0" defer></script>
@@ -77,15 +79,6 @@
             <span class="material-symbols-outlined">person</span>
             <span class="btn-text">Login</span>
           </button>
-        </div>
-
-        <!-- Relocated Quote Badge: Soft Neumorphic Cloud Pill Directly Underneath Login -->
-        <div class="top-quote-cloud-pill" aria-label="Daily Inspiration Quote">
-          <span class="cloud-pill-emoji">💚</span>
-          <div class="cloud-pill-content">
-            <span class="cloud-pill-sub">Small Steps</span>
-            <strong class="cloud-pill-title">Healthier Tomorrows</strong>
-          </div>
         </div>
       </div>
     </header>
@@ -139,6 +132,15 @@
 
       <!-- Right Column: 4 Neumorphic Feature Cards -->
       <div class="hero-right-col" role="region" aria-label="CareWell Key Features">
+        <!-- Relocated Badge Element: Directly Above Never Miss a Dose Feature Card -->
+        <div class="top-quote-cloud-pill" aria-label="Daily Inspiration Quote" style="align-self: flex-start; margin-bottom: 2px;">
+          <span class="cloud-pill-emoji">💚</span>
+          <div class="cloud-pill-content">
+            <span class="cloud-pill-sub">Small Steps</span>
+            <strong class="cloud-pill-title">Healthier Tomorrows</strong>
+          </div>
+        </div>
+
         <!-- Card 1: Never Miss a Dose -->
         <div class="carewell-card-widget" data-auth="signup" role="button" tabindex="0">
           <div class="card-widget-icon" style="color:#2563eb;background:#eff6ff;">
@@ -310,18 +312,36 @@
         </div>
 
         <div class="sched-form-grid">
-          <div class="auth-field">
+          <div class="auth-field clock-picker-field">
             <label for="schedTime">Scheduled Time *</label>
-            <select id="schedTime" class="sched-select" required>
-              <option value="06:00 AM">06:00 AM (Early Morning)</option>
-              <option value="08:00 AM" selected>08:00 AM (Breakfast)</option>
-              <option value="10:00 AM">10:00 AM (Mid-Morning)</option>
-              <option value="12:30 PM">12:30 PM (Lunch)</option>
-              <option value="02:00 PM">02:00 PM (Afternoon)</option>
-              <option value="06:00 PM">06:00 PM (Evening)</option>
-              <option value="08:00 PM">08:00 PM (Dinner)</option>
-              <option value="10:00 PM">10:00 PM (Bedtime)</option>
-            </select>
+            <input type="hidden" id="schedTime" name="schedTime" value="08:00 AM" required>
+            
+            <div class="digital-clock-picker" id="digitalClockPicker" role="group" aria-label="Digital Clock Time Picker">
+              <!-- Hour Stepper & Display -->
+              <div class="clock-unit-col">
+                <button type="button" class="clock-stepper-btn" id="clockHourUp" aria-label="Increase Hour">▲</button>
+                <input type="text" id="clockHourInput" class="clock-digit-input" value="08" maxlength="2" inputmode="numeric" aria-label="Hour (1-12)">
+                <button type="button" class="clock-stepper-btn" id="clockHourDown" aria-label="Decrease Hour">▼</button>
+              </div>
+
+              <!-- Colon Separator -->
+              <div class="clock-separator-col">
+                <span class="clock-separator">:</span>
+              </div>
+
+              <!-- Minute Stepper & Display -->
+              <div class="clock-unit-col">
+                <button type="button" class="clock-stepper-btn" id="clockMinUp" aria-label="Increase Minute">▲</button>
+                <input type="text" id="clockMinInput" class="clock-digit-input" value="00" maxlength="2" inputmode="numeric" aria-label="Minute (00-59)">
+                <button type="button" class="clock-stepper-btn" id="clockMinDown" aria-label="Decrease Minute">▼</button>
+              </div>
+
+              <!-- AM / PM Segmented Toggle -->
+              <div class="clock-period-col">
+                <button type="button" class="clock-period-btn active" id="clockBtnAM" data-period="AM" aria-label="Set AM">AM</button>
+                <button type="button" class="clock-period-btn" id="clockBtnPM" data-period="PM" aria-label="Set PM">PM</button>
+              </div>
+            </div>
           </div>
 
           <div class="auth-field">
@@ -686,28 +706,53 @@
   </div>
 
   <!-- ═══════════════════════════════════════════
-       ACTIONABLE IN-APP ALARM MODAL (Req 2)
+       MEDICINE REMINDER FLOATING NOTIFICATION POPUP (Requirement 3)
        ═══════════════════════════════════════════ -->
   <div class="carepill-alarm-popup-overlay" id="alarmPopupOverlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="carepill-alarm-popup-card">
+    <div class="carepill-alarm-popup-card floating-reminder-card">
+      <button class="alarm-popup-close-btn" id="popupDismissCrossBtn" type="button" aria-label="Dismiss reminder">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
       <div class="alarm-popup-icon-ring">
-        <span class="material-symbols-outlined">alarm_on</span>
+        <span class="material-symbols-outlined">notifications_active</span>
       </div>
-      <span style="display:inline-block;padding:3px 12px;border-radius:999px;background:#fee2e2;color:#dc2626;font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">
+
+      <span class="alarm-status-pill">
         Scheduled Medicine Due Now
       </span>
-      <h2 id="alarmPopupMedName" style="font-size:22px;color:var(--ink);margin:0 0 6px;">Atorvastatin — 20mg</h2>
-      <p id="alarmPopupInstructions" style="color:var(--muted);font-size:13.5px;margin:0 0 10px;">Take with food as prescribed</p>
-      <p id="alarmPopupRx" style="font-size:11.5px;color:var(--teal);margin:0;"></p>
 
-      <div class="alarm-popup-actions">
-        <button type="button" class="btn-alarm-taken" id="popupTakenBtn">
+      <!-- Medicine Name -->
+      <h2 id="alarmPopupMedName" class="alarm-med-name">Atorvastatin</h2>
+
+      <!-- Medicine Dosage & Scheduled Time -->
+      <div class="alarm-med-badges">
+        <span class="alarm-badge dosage-badge">
+          <span class="material-symbols-outlined">medication</span>
+          <span id="alarmPopupDosage">20mg · 1 tablet</span>
+        </span>
+        <span class="alarm-badge time-badge">
+          <span class="material-symbols-outlined">schedule</span>
+          <span id="alarmPopupTime">08:00 AM</span>
+        </span>
+      </div>
+
+      <p id="alarmPopupInstructions" class="alarm-instructions">Take with food as prescribed</p>
+      <p id="alarmPopupRx" class="alarm-rx" style="display:none;"></p>
+
+      <!-- 3 Functional Buttons: Taken, Snooze, Dismiss -->
+      <div class="alarm-popup-actions-trio">
+        <button type="button" class="btn-alarm-taken" id="popupTakenBtn" aria-label="Mark medicine as taken">
           <span class="material-symbols-outlined">check_circle</span>
           <span>Taken</span>
         </button>
-        <button type="button" class="btn-alarm-snooze" id="popupSnoozeBtn">
+        <button type="button" class="btn-alarm-snooze" id="popupSnoozeBtn" aria-label="Snooze reminder for 10 minutes">
           <span class="material-symbols-outlined">snooze</span>
-          <span>Snooze 10m</span>
+          <span>Snooze</span>
+        </button>
+        <button type="button" class="btn-alarm-dismiss" id="popupDismissBtn" aria-label="Dismiss reminder">
+          <span class="material-symbols-outlined">cancel</span>
+          <span>Dismiss</span>
         </button>
       </div>
     </div>

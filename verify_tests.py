@@ -28,10 +28,30 @@ def run_tests():
     assert 'Login' in landing_nav, "Login text missing"
     print("[PASS] Clean Login button located on top right")
 
-    # Verify Quote "Small Steps Healthier Tomorrows" directly underneath Login
-    assert 'top-quote-cloud-pill' in landing_nav, "Quote pill container missing from header actions column"
-    assert 'Small Steps' in landing_nav and 'Healthier Tomorrows' in landing_nav, "Quote text mismatch"
-    print("[PASS] Quote 'Small Steps Healthier Tomorrows' neatly aligned in soft neumorphic cloud pill container")
+    # Verify Quote "Small Steps Healthier Tomorrows" directly above the first feature card (Never Miss a Dose)
+    assert 'top-quote-cloud-pill' not in landing_nav, "Badge still present in landing nav"
+    assert 'top-quote-cloud-pill' in html, "Quote pill container missing from DOM"
+    first_card_pos = html.find('<strong>Never Miss a Dose</strong>')
+    badge_pos = html.find('top-quote-cloud-pill')
+    assert 0 < badge_pos < first_card_pos, "Badge should be positioned directly above the first feature card ('Never Miss a Dose')"
+    assert 'Small Steps' in html and 'Healthier Tomorrows' in html, "Quote text mismatch"
+    print("[PASS] Quote 'Small Steps Healthier Tomorrows' repositioned directly above 'Never Miss a Dose' card (Item 1)")
+
+    # Verify Digital Clock Time Picker in Schedule Modal (Item 4)
+    assert 'id="digitalClockPicker"' in html, "digitalClockPicker missing in index.html"
+    assert 'id="clockHourInput"' in html and 'id="clockMinInput"' in html, "Clock hour and min inputs missing"
+    assert 'id="clockBtnAM"' in html and 'id="clockBtnPM"' in html, "Clock AM/PM toggle buttons missing"
+    assert 'clockHourUp' in html and 'clockMinUp' in html, "Clock steppers missing"
+    print("[PASS] Interactive Digital Clock Time Picker (HH:MM, AM/PM toggle, steppers) verified in schedule modal (Item 4)")
+
+    # Verify Medicine Reminder Notification Popup (Item 3)
+    assert 'id="alarmPopupOverlay"' in html, "alarmPopupOverlay missing"
+    assert 'id="alarmPopupDosage"' in html, "alarmPopupDosage element missing"
+    assert 'id="alarmPopupTime"' in html, "alarmPopupTime element missing"
+    assert 'id="popupTakenBtn"' in html, "popupTakenBtn button missing"
+    assert 'id="popupSnoozeBtn"' in html, "popupSnoozeBtn button missing"
+    assert 'id="popupDismissBtn"' in html, "popupDismissBtn button missing"
+    print("[PASS] Medicine reminder popup with Name, Dosage, Time, and Taken/Snooze/Dismiss buttons verified (Item 3)")
 
     # Verify Footer & Contact modal
     assert 'openContactTeamBtn' in html, "openContactTeamBtn missing from footer"
@@ -70,6 +90,31 @@ def run_tests():
     assert 'initContactTeamModal' in js, "initContactTeamModal missing"
     assert 'deleteMyReviewBtn' in js, "deleteMyReviewBtn handler missing"
     assert 'Delete My Review' in js, "'Delete My Review' text missing"
+
+    # Hospital Scanner checks (Item 2)
+    assert 'function showHospitalScanner(' in js, "showHospitalScanner missing in script.js"
+    assert 'hsHospitalName' in js, "Hospital Name input logic missing"
+    assert 'navigator.geolocation.getCurrentPosition' in js, "Geolocation check missing"
+    assert 'hsManualLocation' in js, "Manual location input fallback missing"
+    assert 'scanDirection' in js and 'shatter' in js, "Double-pass scanner and shatter animation logic missing"
+    assert 'Room Number &amp; Ward' in js or 'Room Number & Ward' in js, "Room Number & Ward missing from patient record"
+    assert 'Doctor Appointment Details' in js, "Doctor Appointment Details missing from patient record"
+    assert 'Medicine Prescriptions' in js, "Medicine Prescriptions missing from patient record"
+    assert 'Medical &amp; Lab Reports' in js or 'Medical & Lab Reports' in js, "Medical & Lab Reports missing from patient record"
+    print("[PASS] Hospital Scanner with Geolocation, Dynamic QR, Double-Pass Shatter, and Full Patient Records verified (Item 2)")
+
+    # Digital Clock Logic check (Item 4)
+    assert 'function initDigitalClockPicker(' in js, "initDigitalClockPicker missing in script.js"
+    print("[PASS] Digital Clock Picker initialization and synchronization logic verified (Item 4)")
+
+    # Alarm Manager checks (Item 3)
+    with open("alarm.js", "r", encoding="utf-8") as f:
+        alarm_js = f.read()
+    assert 'popupTakenBtn' in alarm_js, "popupTakenBtn logic missing in alarm.js"
+    assert 'popupSnoozeBtn' in alarm_js, "popupSnoozeBtn logic missing in alarm.js"
+    assert 'popupDismissBtn' in alarm_js, "popupDismissBtn logic missing in alarm.js"
+    assert 'alarmPopupDosage' in alarm_js and 'alarmPopupTime' in alarm_js, "Dosage and time binding missing in alarm.js"
+    print("[PASS] Medicine reminder popup dispatch with Taken, Snooze, and Dismiss verified (Item 3)")
 
     # Boundary rules verification
     assert 'X of Y taken' in js or 'taken of' in js or 'progress' in js, "Progress counter missing"

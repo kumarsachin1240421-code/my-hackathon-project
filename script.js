@@ -1118,6 +1118,138 @@ function stopAutoRefresh() {
   }
 }
 
+/* ═══════════════════════════════════════════════
+   ITEM 4: DIGITAL CLOCK TIME PICKER CONTROLLER
+   ═══════════════════════════════════════════════ */
+function initDigitalClockPicker() {
+  const hiddenTime = document.getElementById('schedTime');
+  const hourInput = document.getElementById('clockHourInput');
+  const minInput = document.getElementById('clockMinInput');
+  const btnAM = document.getElementById('clockBtnAM');
+  const btnPM = document.getElementById('clockBtnPM');
+  const hourUp = document.getElementById('clockHourUp');
+  const hourDown = document.getElementById('clockHourDown');
+  const minUp = document.getElementById('clockMinUp');
+  const minDown = document.getElementById('clockMinDown');
+
+  if (!hiddenTime || !hourInput || !minInput || !btnAM || !btnPM) return;
+
+  function updateHiddenValue() {
+    let h = parseInt(hourInput.value, 10);
+    if (isNaN(h) || h < 1) h = 1;
+    if (h > 12) h = 12;
+    let m = parseInt(minInput.value, 10);
+    if (isNaN(m) || m < 0) m = 0;
+    if (m > 59) m = 59;
+    const period = btnPM.classList.contains('active') ? 'PM' : 'AM';
+    const hStr = String(h).padStart(2, '0');
+    const mStr = String(m).padStart(2, '0');
+    hiddenTime.value = `${hStr}:${mStr} ${period}`;
+  }
+
+  function setClock(h, m, period) {
+    if (hourInput) hourInput.value = String(h).padStart(2, '0');
+    if (minInput) minInput.value = String(m).padStart(2, '0');
+    if (period === 'PM') {
+      btnPM.classList.add('active');
+      btnAM.classList.remove('active');
+    } else {
+      btnAM.classList.add('active');
+      btnPM.classList.remove('active');
+    }
+    updateHiddenValue();
+  }
+
+  window.syncClockFromHidden = function() {
+    const val = hiddenTime.value.trim();
+    const match = val.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (match) {
+      setClock(parseInt(match[1], 10), parseInt(match[2], 10), match[3].toUpperCase());
+    } else {
+      setClock(8, 0, 'AM');
+    }
+  };
+
+  if (!window._clockPickerInitialized) {
+    window._clockPickerInitialized = true;
+
+    if (hourUp) {
+      hourUp.addEventListener('click', () => {
+        let h = parseInt(hourInput.value, 10) || 12;
+        h = h >= 12 ? 1 : h + 1;
+        hourInput.value = String(h).padStart(2, '0');
+        updateHiddenValue();
+      });
+    }
+
+    if (hourDown) {
+      hourDown.addEventListener('click', () => {
+        let h = parseInt(hourInput.value, 10) || 1;
+        h = h <= 1 ? 12 : h - 1;
+        hourInput.value = String(h).padStart(2, '0');
+        updateHiddenValue();
+      });
+    }
+
+    if (minUp) {
+      minUp.addEventListener('click', () => {
+        let m = parseInt(minInput.value, 10) || 0;
+        m = (m + 5) % 60;
+        minInput.value = String(m).padStart(2, '0');
+        updateHiddenValue();
+      });
+    }
+
+    if (minDown) {
+      minDown.addEventListener('click', () => {
+        let m = parseInt(minInput.value, 10) || 0;
+        m = (m - 5 + 60) % 60;
+        minInput.value = String(m).padStart(2, '0');
+        updateHiddenValue();
+      });
+    }
+
+    hourInput.addEventListener('input', () => {
+      hourInput.value = hourInput.value.replace(/\D/g, '').slice(0, 2);
+      updateHiddenValue();
+    });
+    hourInput.addEventListener('blur', () => {
+      let h = parseInt(hourInput.value, 10);
+      if (isNaN(h) || h < 1) h = 12;
+      if (h > 12) h = 12;
+      hourInput.value = String(h).padStart(2, '0');
+      updateHiddenValue();
+    });
+
+    minInput.addEventListener('input', () => {
+      minInput.value = minInput.value.replace(/\D/g, '').slice(0, 2);
+      updateHiddenValue();
+    });
+    minInput.addEventListener('blur', () => {
+      let m = parseInt(minInput.value, 10);
+      if (isNaN(m) || m < 0) m = 0;
+      if (m > 59) m = 59;
+      minInput.value = String(m).padStart(2, '0');
+      updateHiddenValue();
+    });
+
+    btnAM.addEventListener('click', () => {
+      btnAM.classList.add('active');
+      btnPM.classList.remove('active');
+      updateHiddenValue();
+    });
+
+    btnPM.addEventListener('click', () => {
+      btnPM.classList.add('active');
+      btnAM.classList.remove('active');
+      updateHiddenValue();
+    });
+  }
+
+  window.syncClockFromHidden();
+}
+window.initDigitalClockPicker = initDigitalClockPicker;
+
 /* ── Schedule Modal Controllers ── */
 function openScheduleModal() {
   const overlay = document.getElementById('scheduleModalOverlay');
@@ -1129,6 +1261,9 @@ function openScheduleModal() {
   
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
+  if (typeof initDigitalClockPicker === 'function') {
+    initDigitalClockPicker();
+  }
   const firstInput = document.getElementById('schedMedName');
   if (firstInput) firstInput.focus();
 }
@@ -2801,6 +2936,605 @@ function bindLocateWidget() {
   });
 }
 
+/* ═══════════════════════════════════════════════
+   ITEM 2: HOSPITAL SCANNER & CLINICAL RECORD VIEW
+   ═══════════════════════════════════════════════ */
+function showHospitalScanner() {
+  document.querySelector('h1').textContent = 'Hospital Scanner';
+  document.querySelector('.date').textContent = 'Bedside clinical QR linking & digital health records';
+
+  dataView.innerHTML = `
+    <div class="hospital-scanner-wrapper" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 24px; max-width: 960px; margin: 0 auto; width: 100%;">
+      <!-- Header Overview Card -->
+      <article class="data-card hs-hero-card">
+        <div class="section-title">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="hs-icon-box">
+              <span class="material-symbols-outlined">document_scanner</span>
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: var(--ink);">Hospital Bedside Scanner</h2>
+              <span style="font-size: 13px; color: var(--muted);">Smart In-Patient QR Verification & Clinical Sync</span>
+            </div>
+          </div>
+          <span class="hs-chip-online">● Clinical Network Active</span>
+        </div>
+        <p style="margin: 12px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.5;">
+          Connect directly to hospital clinical databases. Automatically verifies bedside GPS coordinates, generates dynamic clinical security tokens, and synchronizes real-time patient charts, appointments, and prescriptions upon laser scanning.
+        </p>
+      </article>
+
+      <!-- Hospital Configuration & Geolocation Panel -->
+      <div class="hs-grid-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start;">
+        <!-- Left: Hospital Setup Controls -->
+        <article class="data-card hs-controls-card">
+          <div class="section-title">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 8px;">
+              <span class="material-symbols-outlined" style="color: var(--blue);">local_hospital</span>
+              Hospital Setup &amp; Location
+            </h3>
+          </div>
+
+          <div class="hs-field" style="margin-top: 16px;">
+            <label for="hsHospitalName" style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px;">Hospital Name *</label>
+            <div class="hs-input-wrap">
+              <input type="text" id="hsHospitalName" class="hs-input" value="Apollo City General Hospital" placeholder="Enter Hospital Name (e.g. Metro Memorial, Fortis, AIIMS)">
+            </div>
+          </div>
+
+          <!-- Geolocation Status & Check -->
+          <div class="hs-field" style="margin-top: 16px;">
+            <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px;">Bedside GPS Coordinates</label>
+            <div id="hsGeoStatus" class="hs-geo-status">
+              <span class="hs-pulse-dot"></span>
+              <span id="hsGeoStatusText">Checking browser geolocation...</span>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+              <button type="button" id="hsCheckGpsBtn" class="hs-btn-compact">
+                <span class="material-symbols-outlined" style="font-size: 16px;">my_location</span>
+                <span>Auto Fetch Coordinates</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fallback Manual Location Input (Shown if denied or toggled) -->
+          <div id="hsManualLocationWrap" class="hs-field" style="display: none; margin-top: 16px; padding: 12px; border-radius: 14px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4);">
+            <label for="hsManualLocation" style="display: block; font-size: 11.5px; font-weight: 700; color: #b45309; margin-bottom: 4px;">
+              ⚠️ Location Denied / Manual Location Required:
+            </label>
+            <input type="text" id="hsManualLocation" class="hs-input" placeholder="e.g. 28.6139° N, 77.2090° E or Central Medical Block, Room 402" value="New Delhi Medical Enclave, Cardiac Ward B">
+          </div>
+
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button type="button" id="hsGenBtn" class="btn-signup" style="flex: 1; padding: 12px; font-size: 13.5px; justify-content: center;">
+              <span class="material-symbols-outlined">qr_code</span>
+              <span>Generate Dynamic QR</span>
+            </button>
+          </div>
+          <div class="hs-error-msg" id="hsErrorMsg" style="color: #ef4444; font-size: 12px; margin-top: 8px; text-align: center; min-height: 1.2em;"></div>
+        </article>
+
+        <!-- Right: Double-Pass Scanner Stage & Shatter Animation -->
+        <article class="data-card hs-scanner-stage-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+          <div class="hs-stage-header" style="margin-bottom: 12px;">
+            <span class="hs-stage-pill">Clinical Bedside QR</span>
+            <p style="font-size: 12px; color: var(--muted); margin: 4px 0 0;">Dual-pass laser scanner reads top-to-bottom, bottom-to-top, zooms, and shatters outward.</p>
+          </div>
+
+          <!-- Dynamic DOM QR Stage -->
+          <div class="hs-stage" id="hsStage">
+            <div class="hs-qr-card" id="hsQrCard">
+              <div class="hs-qr-grid" id="hsQrGrid">
+                <div class="hs-scan-beam" id="hsScanBeam"></div>
+              </div>
+            </div>
+
+            <!-- Reveal Verified Badge -->
+            <div class="hs-reveal" id="hsReveal">
+              <div class="hs-reveal-check">✓</div>
+              <div class="hs-reveal-text">Bedside QR Verified</div>
+              <div class="hs-reveal-url" id="hsRevealUrl">Apollo City General Hospital</div>
+              <span style="font-size: 11px; color: var(--teal); font-weight: 700; margin-top: 4px;">Record Decrypted Successfully</span>
+            </div>
+          </div>
+
+          <!-- Action Controls: Scan & Reset -->
+          <div class="hs-stage-actions" style="margin-top: 20px; display: flex; gap: 12px; width: 100%; max-width: 320px; justify-content: center;">
+            <button id="hsScanBtn" class="hs-btn-primary" type="button">
+              <span class="material-symbols-outlined">barcode_scanner</span>
+              <span>Scan Bedside QR</span>
+            </button>
+            <button id="hsResetBtn" class="hs-btn-secondary" type="button">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Reset</span>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <!-- Patient Record View (Revealed Upon Scan Completion) -->
+      <article class="data-card hs-patient-record-card" id="hsPatientRecordCard" style="display: none;">
+        <div class="section-title" style="border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 16px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; display: grid; place-items: center; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+              <span class="material-symbols-outlined" style="font-size: 26px;">verified_user</span>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h3 style="margin: 0; font-size: 19px; font-weight: 800; color: var(--ink);">Patient Clinical Record</h3>
+                <span class="hs-badge-verified">Verified Bedside Link</span>
+              </div>
+              <p style="margin: 2px 0 0; font-size: 13px; color: var(--muted);" id="hsRecordMeta">
+                Patient: <strong>Johnathan Doe (58 Y / M)</strong> · MRN: <strong>CW-84920</strong> · Admission ID: <strong>ADM-2026-991</strong>
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-login" onclick="window.print()" style="font-size: 12px; padding: 6px 14px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+            <span>Print Chart</span>
+          </button>
+        </div>
+
+        <div class="hs-records-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+          <!-- 1. Room Number & Ward -->
+          <div class="hs-record-block">
+            <div class="hs-block-header">
+              <span class="material-symbols-outlined" style="color: #2563eb;">meeting_room</span>
+              <h4>Room Number &amp; Ward</h4>
+            </div>
+            <div class="hs-block-content">
+              <div class="hs-data-row">
+                <span class="hs-label">Room Number:</span>
+                <strong class="hs-value" id="hsRecordRoom">Room 402 (Deluxe Bedside A)</strong>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Ward Section:</span>
+                <strong class="hs-value" id="hsRecordWard">Acute Cardiology &amp; Step-Down Ward B</strong>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Assigned Hospital:</span>
+                <span class="hs-value" id="hsRecordHospitalName">Apollo City General Hospital</span>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Attending Staff:</span>
+                <span class="hs-value">Nurse Supervisor Clara M., RN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Doctor Appointment Details -->
+          <div class="hs-record-block">
+            <div class="hs-block-header">
+              <span class="material-symbols-outlined" style="color: #0d9488;">calendar_month</span>
+              <h4>Doctor Appointment Details</h4>
+            </div>
+            <div class="hs-block-content">
+              <div class="hs-data-row">
+                <span class="hs-label">Consulting Doctor:</span>
+                <strong class="hs-value">Dr. Ananya Sharma, MD (Cardiology)</strong>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Scheduled Time:</span>
+                <strong class="hs-value" style="color: var(--blue);">Today at 11:30 AM (Bedside Rounds)</strong>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Consultation Type:</span>
+                <span class="hs-value">In-Patient Daily Assessment &amp; ECG Review</span>
+              </div>
+              <div class="hs-data-row">
+                <span class="hs-label">Clinical Status:</span>
+                <span class="hs-pill-green">Confirmed &amp; Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Medicine Prescriptions -->
+          <div class="hs-record-block" style="grid-column: 1 / -1;">
+            <div class="hs-block-header">
+              <span class="material-symbols-outlined" style="color: #8b5cf6;">prescriptions</span>
+              <h4>Medicine Prescriptions</h4>
+            </div>
+            <div class="hs-prescriptions-table-wrap" style="overflow-x: auto;">
+              <table class="hs-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid rgba(0,0,0,0.06); color: var(--muted); font-size: 12px;">
+                    <th style="padding: 8px 12px;">Medication</th>
+                    <th style="padding: 8px 12px;">Dosage &amp; Form</th>
+                    <th style="padding: 8px 12px;">Frequency</th>
+                    <th style="padding: 8px 12px;">Timing</th>
+                    <th style="padding: 8px 12px;">Special Directions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                    <td style="padding: 10px 12px; font-weight: 700; color: var(--ink);">Metformin HCl</td>
+                    <td style="padding: 10px 12px;">500 mg · Oral Tablet</td>
+                    <td style="padding: 10px 12px;">Twice daily</td>
+                    <td style="padding: 10px 12px;">08:00 AM, 08:00 PM</td>
+                    <td style="padding: 10px 12px; color: var(--muted);">Take immediately after meals</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                    <td style="padding: 10px 12px; font-weight: 700; color: var(--ink);">Atorvastatin Calcium</td>
+                    <td style="padding: 10px 12px;">20 mg · Oral Tablet</td>
+                    <td style="padding: 10px 12px;">Once daily</td>
+                    <td style="padding: 10px 12px;">10:00 PM (Night)</td>
+                    <td style="padding: 10px 12px; color: var(--muted);">Bedtime dose with a glass of water</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                    <td style="padding: 10px 12px; font-weight: 700; color: var(--ink);">Aspirin (Ecosprin)</td>
+                    <td style="padding: 10px 12px;">75 mg · Gastro-resistant</td>
+                    <td style="padding: 10px 12px;">Once daily</td>
+                    <td style="padding: 10px 12px;">01:30 PM (Lunch)</td>
+                    <td style="padding: 10px 12px; color: var(--muted);">Post-lunch with ample water</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 12px; font-weight: 700; color: var(--ink);">Ramipril</td>
+                    <td style="padding: 10px 12px;">5 mg · Capsule</td>
+                    <td style="padding: 10px 12px;">Once daily</td>
+                    <td style="padding: 10px 12px;">08:00 AM (Morning)</td>
+                    <td style="padding: 10px 12px; color: var(--muted);">Blood pressure control; do not skip</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 4. Medical & Lab Reports -->
+          <div class="hs-record-block" style="grid-column: 1 / -1;">
+            <div class="hs-block-header">
+              <span class="material-symbols-outlined" style="color: #dc2626;">biotechnology</span>
+              <h4>Medical &amp; Lab Reports</h4>
+            </div>
+            <div class="hs-reports-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px;">
+              <div class="hs-report-item">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <strong style="font-size: 13.5px; color: var(--ink);">Complete Blood Count</strong>
+                  <span class="hs-badge-normal">Normal</span>
+                </div>
+                <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Hb 14.2 g/dL · WBC 6.8k/μL · Platelets 240k</p>
+                <small style="color: var(--teal); font-size: 11px;">Verified by NABL Lab</small>
+              </div>
+
+              <div class="hs-report-item">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <strong style="font-size: 13.5px; color: var(--ink);">Fasting Glucose</strong>
+                  <span class="hs-badge-normal">98 mg/dL</span>
+                </div>
+                <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Target range: 70 - 100 mg/dL (Euglycemic)</p>
+                <small style="color: var(--teal); font-size: 11px;">Sample: 07:15 AM</small>
+              </div>
+
+              <div class="hs-report-item">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <strong style="font-size: 13.5px; color: var(--ink);">12-Lead ECG</strong>
+                  <span class="hs-badge-normal">Sinus Rhythm</span>
+                </div>
+                <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">HR 72 bpm · PR 156ms · QTc 410ms · No ST changes</p>
+                <small style="color: var(--teal); font-size: 11px;">Cardiologist Approved</small>
+              </div>
+
+              <div class="hs-report-item">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <strong style="font-size: 13.5px; color: var(--ink);">Kidney Function (KFT)</strong>
+                  <span class="hs-badge-normal">Optimal</span>
+                </div>
+                <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted);">Creatinine 0.9 mg/dL · BUN 14 mg/dL · eGFR > 90</p>
+                <small style="color: var(--teal); font-size: 11px;">Normal Renal Clearance</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  `;
+
+  // Script & Animation Logic
+  const hospInput = document.getElementById('hsHospitalName');
+  const geoStatus = document.getElementById('hsGeoStatus');
+  const geoStatusText = document.getElementById('hsGeoStatusText');
+  const manualWrap = document.getElementById('hsManualLocationWrap');
+  const manualInput = document.getElementById('hsManualLocation');
+  const checkGpsBtn = document.getElementById('hsCheckGpsBtn');
+  const genBtn = document.getElementById('hsGenBtn');
+  const scanBtn = document.getElementById('hsScanBtn');
+  const resetBtn = document.getElementById('hsResetBtn');
+  const errorMsg = document.getElementById('hsErrorMsg');
+
+  const qrCard = document.getElementById('hsQrCard');
+  const qrGrid = document.getElementById('hsQrGrid');
+  const reveal = document.getElementById('hsReveal');
+  const revealUrl = document.getElementById('hsRevealUrl');
+  const patientCard = document.getElementById('hsPatientRecordCard');
+  const recordHospName = document.getElementById('hsRecordHospitalName');
+
+  const GRID_SIZE = 210;
+  const SCAN_DURATION = 1350;
+  const GAP_BETWEEN_SCANS = 180;
+
+  let modules = [];
+  let animationTimers = [];
+  let userCoords = '';
+
+  function clearTimers() {
+    animationTimers.forEach(clearTimeout);
+    animationTimers = [];
+  }
+
+  function getQRCodeMatrix(text) {
+    if (typeof qrcode === 'function') {
+      try {
+        const qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        const count = qr.getModuleCount();
+        const matrix = [];
+        for (let r = 0; r < count; r++) {
+          const row = [];
+          for (let c = 0; c < count; c++) {
+            row.push(qr.isDark(r, c));
+          }
+          matrix.push(row);
+        }
+        return matrix;
+      } catch (e) {}
+    }
+    const size = 21;
+    const m = Array(size).fill(0).map(() => Array(size).fill(false));
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if ((r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7)) {
+          const inR = r < 7 ? r : r - (size - 7);
+          const inC = c < 7 ? c : (c >= size - 7 ? c - (size - 7) : c);
+          if (inR === 0 || inR === 6 || inC === 0 || inC === 6 || (inR >= 2 && inR <= 4 && inC >= 2 && inC <= 4)) {
+            m[r][c] = true;
+          }
+        } else {
+          const hash = (r * 31 + c * 17 + (text.charCodeAt((r + c) % text.length) || 42)) % 10;
+          if (hash < 5) m[r][c] = true;
+        }
+      }
+    }
+    return m;
+  }
+
+  function buildQR(text) {
+    clearTimers();
+    if (errorMsg) errorMsg.textContent = '';
+
+    try {
+      const matrix = getQRCodeMatrix(text);
+      const count = matrix.length;
+      const cell = GRID_SIZE / count;
+
+      qrGrid.innerHTML = '';
+      modules = [];
+
+      const beam = document.createElement('div');
+      beam.className = 'hs-scan-beam';
+      qrGrid.appendChild(beam);
+
+      for (let row = 0; row < count; row++) {
+        for (let col = 0; col < count; col++) {
+          if (!matrix[row][col]) continue;
+
+          const el = document.createElement('div');
+          el.className = 'hs-module';
+          el.style.width = cell + 'px';
+          el.style.height = cell + 'px';
+          el.style.left = (col * cell) + 'px';
+          el.style.top = (row * cell) + 'px';
+
+          qrGrid.appendChild(el);
+          modules.push({ el, row, col });
+        }
+      }
+
+      if (revealUrl) revealUrl.textContent = hospInput.value.trim() || text;
+      if (recordHospName) recordHospName.textContent = hospInput.value.trim() || 'General Hospital';
+      resetVisualState();
+    } catch (err) {
+      if (errorMsg) errorMsg.textContent = "Could not encode QR — try a shorter text.";
+    }
+  }
+
+  function resetVisualState() {
+    clearTimers();
+
+    qrGrid.classList.remove('scan-down', 'scan-up', 'shatter');
+    qrCard.classList.remove('zoom', 'gone');
+    reveal.classList.remove('show');
+    if (patientCard) patientCard.style.display = 'none';
+
+    modules.forEach(({ el }) => {
+      el.classList.remove('scan-hit');
+      el.style.transitionDelay = '0ms';
+      el.style.removeProperty('--tx');
+      el.style.removeProperty('--ty');
+      el.style.removeProperty('--rot');
+      el.style.removeProperty('--scale');
+    });
+
+    scanBtn.disabled = false;
+    genBtn.disabled = false;
+  }
+
+  function scanDirection(direction) {
+    const maxRow = Math.max(...modules.map(m => m.row));
+
+    modules.forEach(({ el, row }) => {
+      const delay = direction === 'down'
+        ? (row / maxRow) * (SCAN_DURATION - 150)
+        : ((maxRow - row) / maxRow) * (SCAN_DURATION - 150);
+
+      const timer = setTimeout(() => {
+        el.classList.remove('scan-hit');
+        void el.offsetWidth;
+        el.classList.add('scan-hit');
+      }, delay);
+
+      animationTimers.push(timer);
+    });
+
+    qrGrid.classList.remove('scan-down', 'scan-up');
+    void qrGrid.offsetWidth;
+    qrGrid.classList.add(direction === 'down' ? 'scan-down' : 'scan-up');
+  }
+
+  function shatter() {
+    const maxRow = Math.max(...modules.map(m => m.row));
+    const maxCol = Math.max(...modules.map(m => m.col));
+    const centerX = maxCol / 2;
+    const centerY = maxRow / 2;
+
+    modules.forEach(({ el, row, col }) => {
+      const dx = col - centerX;
+      const dy = row - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+
+      const nx = dx / distance;
+      const ny = dy / distance;
+
+      const force = 80 + Math.random() * 180;
+      const randomX = (Math.random() - 0.5) * 80;
+      const randomY = (Math.random() - 0.5) * 80;
+
+      const tx = nx * force + randomX;
+      const ty = ny * force + randomY;
+      const rot = (Math.random() - 0.5) * 520;
+      const scale = 0.35 + Math.random() * 0.8;
+
+      const delay = Math.max(0, 210 - distance * 7) + Math.random() * 90;
+
+      el.style.setProperty('--tx', tx + 'px');
+      el.style.setProperty('--ty', ty + 'px');
+      el.style.setProperty('--rot', rot + 'deg');
+      el.style.setProperty('--scale', scale);
+      el.style.transitionDelay = delay + 'ms';
+    });
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        qrGrid.classList.add('shatter');
+      });
+    });
+  }
+
+  function simulateScan() {
+    if (!modules.length) return;
+
+    clearTimers();
+    scanBtn.disabled = true;
+    genBtn.disabled = true;
+
+    // 1. First Reading: Top → Bottom
+    scanDirection('down');
+
+    // 2. Second Reading: Bottom → Top
+    const secondScanTimer = setTimeout(() => {
+      scanDirection('up');
+    }, SCAN_DURATION + GAP_BETWEEN_SCANS);
+    animationTimers.push(secondScanTimer);
+
+    // 3. Zoom the QR Card
+    const zoomTimer = setTimeout(() => {
+      qrCard.classList.add('zoom');
+    }, (SCAN_DURATION * 2) + GAP_BETWEEN_SCANS);
+    animationTimers.push(zoomTimer);
+
+    // 4. Shatter outward
+    const shatterTimer = setTimeout(() => {
+      shatter();
+    }, (SCAN_DURATION * 2) + GAP_BETWEEN_SCANS + 550);
+    animationTimers.push(shatterTimer);
+
+    // 5. Reveal Verification & Display Patient Record View
+    const revealTimer = setTimeout(() => {
+      qrCard.classList.add('gone');
+      reveal.classList.add('show');
+      if (patientCard) {
+        patientCard.style.display = 'block';
+        patientCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      scanBtn.disabled = false;
+      genBtn.disabled = false;
+    }, (SCAN_DURATION * 2) + GAP_BETWEEN_SCANS + 1500);
+    animationTimers.push(revealTimer);
+  }
+
+  function getCombinedPayload() {
+    const hName = hospInput ? hospInput.value.trim() || 'Apollo City General Hospital' : 'Apollo City General Hospital';
+    const loc = userCoords || (manualInput ? manualInput.value.trim() : '') || '28.6139° N, 77.2090° E';
+    return `CAREWELL:HOSPITAL=${encodeURIComponent(hName)}&LOC=${encodeURIComponent(loc)}&TIME=${Date.now()}`;
+  }
+
+  // Geolocation Check
+  function checkGeolocation() {
+    if (!navigator.geolocation) {
+      if (geoStatus) geoStatus.className = 'hs-geo-status denied';
+      if (geoStatusText) geoStatusText.textContent = 'Geolocation not supported by browser.';
+      if (manualWrap) manualWrap.style.display = 'block';
+      buildQR(getCombinedPayload());
+      return;
+    }
+
+    if (geoStatusText) geoStatusText.textContent = 'Requesting browser GPS coordinates...';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lon = pos.coords.longitude.toFixed(4);
+        userCoords = `Lat: ${lat}°, Long: ${lon}°`;
+        if (geoStatus) {
+          geoStatus.className = 'hs-geo-status granted';
+          geoStatus.innerHTML = `<span class="hs-pulse-dot"></span> <span>Detected: <strong>${userCoords}</strong></span> <span class="hs-gps-pill">GPS Verified</span>`;
+        }
+        if (manualWrap) manualWrap.style.display = 'none';
+        buildQR(getCombinedPayload());
+      },
+      (err) => {
+        if (geoStatus) {
+          geoStatus.className = 'hs-geo-status denied';
+          geoStatus.innerHTML = `<span>⚠️ Location access denied.</span> <small style="color:var(--muted);margin-left:4px;">Using manual location fallback</small>`;
+        }
+        if (manualWrap) manualWrap.style.display = 'block';
+        buildQR(getCombinedPayload());
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+
+  // Event Listeners
+  if (genBtn) {
+    genBtn.addEventListener('click', () => {
+      buildQR(getCombinedPayload());
+    });
+  }
+
+  if (hospInput) {
+    hospInput.addEventListener('input', () => {
+      if (recordHospName) recordHospName.textContent = hospInput.value.trim() || 'General Hospital';
+    });
+  }
+
+  if (manualInput) {
+    manualInput.addEventListener('input', () => {
+      buildQR(getCombinedPayload());
+    });
+  }
+
+  if (checkGpsBtn) checkGpsBtn.addEventListener('click', checkGeolocation);
+  if (scanBtn) scanBtn.addEventListener('click', simulateScan);
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      buildQR(getCombinedPayload());
+    });
+  }
+
+  // Initial Geolocation check & QR build
+  checkGeolocation();
+  buildQR(getCombinedPayload());
+}
+window.showHospitalScanner = showHospitalScanner;
+
 function selectView(view) {
   currentView = view;
   stopAutoRefresh();
@@ -2854,22 +3588,7 @@ function selectView(view) {
 
   if (view === 'Settings') return showSettings();
   if (view === 'Pharmacy') return showPharmacy();
-  if (view === 'HospitalScanner' || view === 'Hospital Scanner') {
-    document.querySelector('h1').textContent = 'Hospital Scanner';
-    document.querySelector('.date').textContent = 'Hospital bedside and OPD clinical link';
-    dataView.innerHTML = `
-      <article class="data-card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg); box-shadow: var(--raised-sm); display: grid; place-items: center; margin: 0 auto 16px; color: var(--blue);">
-          <span class="material-symbols-outlined" style="font-size: 28px;">document_scanner</span>
-        </div>
-        <h2 style="margin: 0 0 8px; font-size: 20px; font-weight: 800; color: var(--ink);">Hospital Scanner</h2>
-        <p style="margin: 0; font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto; line-height: 1.5;">
-          Hospital bedside connection and clinical scanner module ready for linking hospital records.
-        </p>
-      </article>
-    `;
-    return;
-  }
+  if (view === 'HospitalScanner' || view === 'Hospital Scanner') return showHospitalScanner();
   if (view === 'HospitalEcosystem' || view === 'Hospital' || view === 'Hospital Ecosystem') return showHospitalEcosystem();
   if (view === 'CounsellingSession' || view === 'Counselling' || view === 'MentalHealth' || view === 'Mental Health') return showCounsellingSession();
 

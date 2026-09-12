@@ -258,21 +258,27 @@ const AlarmManager = (() => {
     showActionableAlarmPopup(medication);
   }
 
-  /* ── Actionable In-App Pop-Up Modal (Requirement 2) ── */
+  /* ── Actionable In-App Pop-Up Modal / Floating Notification (Requirement 3) ── */
   function showActionableAlarmPopup(medication) {
     const overlay = document.getElementById('alarmPopupOverlay');
     const nameEl = document.getElementById('alarmPopupMedName');
+    const dosageEl = document.getElementById('alarmPopupDosage');
+    const timeEl = document.getElementById('alarmPopupTime');
     const instEl = document.getElementById('alarmPopupInstructions');
     const rxEl = document.getElementById('alarmPopupRx');
     const takenBtn = document.getElementById('popupTakenBtn');
     const snoozeBtn = document.getElementById('popupSnoozeBtn');
+    const dismissBtn = document.getElementById('popupDismissBtn');
+    const dismissCrossBtn = document.getElementById('popupDismissCrossBtn');
 
     if (!overlay) {
       // Fallback to banner if modal not in DOM
       return showAlarmBanner(medication);
     }
 
-    if (nameEl) nameEl.textContent = `${medication.name} — ${medication.dosage}`;
+    if (nameEl) nameEl.textContent = medication.name || 'Prescribed Medicine';
+    if (dosageEl) dosageEl.textContent = medication.dosage || '1 dose';
+    if (timeEl) timeEl.textContent = medication.scheduled_time || medication.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     if (instEl) instEl.textContent = medication.instructions || 'Take as scheduled';
     if (rxEl) {
       rxEl.textContent = medication.doctor_prescription ? `👨‍⚕️ ${medication.doctor_prescription}` : '';
@@ -282,15 +288,19 @@ const AlarmManager = (() => {
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
 
-    // Clone and replace buttons to clear previous event listeners
+    function closePopup() {
+      stopAlarm();
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    // 1. Taken Button: updates status to completed
     if (takenBtn) {
       const newTakenBtn = takenBtn.cloneNode(true);
       takenBtn.parentNode.replaceChild(newTakenBtn, takenBtn);
 
       newTakenBtn.addEventListener('click', async () => {
-        stopAlarm();
-        overlay.classList.remove('active');
-        overlay.setAttribute('aria-hidden', 'true');
+        closePopup();
 
         // Immediately mark dose as completed in state/localStorage
         if (typeof updateLocalDose === 'function') {
@@ -319,17 +329,35 @@ const AlarmManager = (() => {
       });
     }
 
+    // 2. Snooze Button: delays alert by 10 minutes
     if (snoozeBtn) {
       const newSnoozeBtn = snoozeBtn.cloneNode(true);
       snoozeBtn.parentNode.replaceChild(newSnoozeBtn, snoozeBtn);
 
       newSnoozeBtn.addEventListener('click', () => {
-        stopAlarm();
-        overlay.classList.remove('active');
-        overlay.setAttribute('aria-hidden', 'true');
-
+        closePopup();
         if (typeof notify === 'function') notify(`⏰ ${medication.name} snoozed for 10 minutes.`);
         setTimeout(() => triggerAlarm(medication), 10 * 60 * 1000);
+      });
+    }
+
+    // 3. Dismiss Button: closes the popup
+    if (dismissBtn) {
+      const newDismissBtn = dismissBtn.cloneNode(true);
+      dismissBtn.parentNode.replaceChild(newDismissBtn, dismissBtn);
+
+      newDismissBtn.addEventListener('click', () => {
+        closePopup();
+        if (typeof notify === 'function') notify(`Reminder for ${medication.name} dismissed.`);
+      });
+    }
+
+    if (dismissCrossBtn) {
+      const newCrossBtn = dismissCrossBtn.cloneNode(true);
+      dismissCrossBtn.parentNode.replaceChild(newCrossBtn, dismissCrossBtn);
+
+      newCrossBtn.addEventListener('click', () => {
+        closePopup();
       });
     }
   }
@@ -561,6 +589,7 @@ const AlarmManager = (() => {
           id: 99,
           name: 'Atorvastatin (Test Alarm)',
           dosage: '20mg · 1 tablet',
+          scheduled_time: '08:00 AM',
           instructions: 'Take with food and water',
           doctor_prescription: 'Rx by Dr. A. Sharma: Evening dose with dinner.'
         });

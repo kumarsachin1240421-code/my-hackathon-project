@@ -3072,5 +3072,681 @@ body.dark-mode .timeline-content {
   font-weight: 600;
 }
 
+/* ═══════════════════════════════════════════════
+   ITEM 2: HOSPITAL SCANNER & DOUBLE-PASS SHATTER
+   ═══════════════════════════════════════════════ */
+.hospital-scanner-wrapper {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.hs-hero-card {
+  border-left: 4px solid var(--blue);
+}
+
+.hs-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--raised-sm);
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+}
+
+.hs-chip-online {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.hs-input {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  outline: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13.5px;
+  box-shadow: var(--inset);
+  transition: box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.hs-input:focus {
+  box-shadow: var(--inset), 0 0 0 2px rgba(37, 99, 235, 0.35);
+}
+
+.hs-geo-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.hs-geo-status.granted {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hs-geo-status.denied {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.hs-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  animation: pulseDot 1.5s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.hs-gps-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #10b981;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.hs-btn-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--raised-sm);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.hs-btn-compact:hover {
+  transform: translateY(-1px);
+}
+
+/* Stage & Neumorphic QR Container */
+.hs-stage {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: grid;
+  place-items: center;
+  margin: 10px auto;
+}
+
+.hs-stage-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: rgba(37, 99, 235, 0.08);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.hs-qr-card {
+  position: relative;
+  z-index: 2;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  transform-origin: center;
+  transition: transform .55s cubic-bezier(.2,.8,.2,1), box-shadow .55s ease, opacity .25s ease;
+}
+
+body.dark-mode .hs-qr-card {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.hs-qr-card.zoom {
+  transform: scale(1.1);
+  box-shadow: var(--raised), 0 0 0 2px rgba(37, 99, 235, 0.3), 0 0 35px 8px rgba(37, 99, 235, 0.2);
+}
+
+.hs-qr-card.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hs-qr-grid {
+  position: relative;
+  width: 210px;
+  height: 210px;
+  overflow: visible;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.hs-module {
+  position: absolute;
+  background: var(--ink);
+  border-radius: 1px;
+  opacity: 1;
+  transform: translate3d(0,0,0) rotate(0deg) scale(1);
+  transition: transform .75s cubic-bezier(.22,.75,.2,1), opacity .5s ease;
+  will-change: transform, opacity;
+}
+
+/* Dual Pass Scanner Beam */
+.hs-scan-beam {
+  position: absolute;
+  z-index: 5;
+  left: -9px;
+  right: -9px;
+  height: 3px;
+  opacity: 0;
+  pointer-events: none;
+  background: #0ea5e9;
+  box-shadow: 0 0 6px #0ea5e9, 0 0 16px rgba(14, 165, 233, 0.8), 0 0 28px rgba(14, 165, 233, 0.4);
+}
+
+.hs-scan-beam::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: 36px;
+  background: linear-gradient(to bottom, transparent, rgba(14, 165, 233, 0.15), transparent);
+}
+
+/* Pass 1: TOP → BOTTOM */
+.hs-qr-grid.scan-down .hs-scan-beam {
+  top: -8px;
+  opacity: 1;
+  animation: hsScanDown 1.35s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+@keyframes hsScanDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(226px); }
+}
+
+/* Pass 2: BOTTOM → TOP */
+.hs-qr-grid.scan-up .hs-scan-beam {
+  bottom: -8px;
+  opacity: 1;
+  animation: hsScanUp 1.35s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+@keyframes hsScanUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-226px); }
+}
+
+.hs-module.scan-hit {
+  animation: hsModuleHit .18s ease-out;
+}
+
+@keyframes hsModuleHit {
+  0% { filter: brightness(1); }
+  45% { filter: brightness(2.2); }
+  100% { filter: brightness(1); }
+}
+
+/* Shatter Animation */
+.hs-qr-grid.shatter .hs-module {
+  opacity: 0;
+  transform: translate3d(var(--tx), var(--ty), 0) rotate(var(--rot)) scale(var(--scale));
+}
+
+/* Reveal Result */
+.hs-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transform: scale(.82);
+  pointer-events: none;
+  transition: opacity .5s ease, transform .55s cubic-bezier(.2,.8,.2,1);
+}
+
+.hs-reveal.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.hs-reveal-check {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+}
+
+.hs-reveal-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.hs-reveal-url {
+  font-size: 0.8rem;
+  color: var(--muted);
+  max-width: 230px;
+  word-break: break-word;
+}
+
+.hs-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.hs-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.hs-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hs-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: var(--bg);
+  box-shadow: var(--raised-sm);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.hs-btn-secondary:hover:not(:disabled) {
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+/* Patient Record View Styling */
+.hs-patient-record-card {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-top: 4px solid var(--teal);
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hs-badge-verified {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.hs-record-block {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: var(--raised-sm);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+body.dark-mode .hs-record-block {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.hs-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hs-block-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.hs-data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+}
+
+.hs-data-row:last-child {
+  border-bottom: none;
+}
+
+.hs-label {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.hs-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.hs-pill-green {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.hs-report-item {
+  background: var(--bg);
+  padding: 12px 14px;
+  border-radius: 12px;
+  box-shadow: var(--inset);
+}
+
+.hs-badge-normal {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════
+   ITEM 4: DIGITAL CLOCK TIME PICKER
+   ═══════════════════════════════════════════════ */
+.clock-picker-field {
+  margin-bottom: 8px;
+}
+
+.digital-clock-picker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg);
+  padding: 8px 14px;
+  border-radius: 18px;
+  box-shadow: var(--inset);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  user-select: none;
+}
+
+body.dark-mode .digital-clock-picker {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.clock-unit-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.clock-stepper-btn {
+  background: var(--bg);
+  border: none;
+  box-shadow: var(--raised-sm);
+  width: 32px;
+  height: 22px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--blue);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.clock-stepper-btn:hover {
+  transform: translateY(-1px);
+}
+
+.clock-stepper-btn:active {
+  box-shadow: var(--inset);
+  transform: translateY(1px);
+}
+
+.clock-digit-input {
+  width: 44px;
+  height: 36px;
+  border: none;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  border-radius: 8px;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace, 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  outline: none;
+  padding: 0;
+}
+
+.clock-digit-input:focus {
+  box-shadow: var(--inset), 0 0 0 2px rgba(37, 99, 235, 0.4);
+}
+
+.clock-separator-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clock-separator {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--blue);
+  animation: clockBlink 1.5s infinite;
+}
+
+@keyframes clockBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.clock-period-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.clock-period-btn {
+  border: none;
+  background: var(--bg);
+  box-shadow: var(--raised-sm);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clock-period-btn.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* ═══════════════════════════════════════════════
+   ITEM 3: MEDICINE REMINDER NOTIFICATION POPUP
+   ═══════════════════════════════════════════════ */
+.floating-reminder-card {
+  position: relative;
+  border: 2px solid rgba(239, 68, 68, 0.35);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), var(--raised);
+}
+
+.alarm-popup-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--bg);
+  border: none;
+  box-shadow: var(--raised-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.alarm-popup-close-btn:hover {
+  color: var(--ink);
+  transform: scale(1.05);
+}
+
+.alarm-status-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.alarm-med-name {
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0 0 6px;
+  font-weight: 800;
+}
+
+.alarm-med-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.alarm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.alarm-badge.dosage-badge {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--blue);
+}
+
+.alarm-badge.time-badge {
+  background: rgba(13, 158, 113, 0.08);
+  color: var(--teal);
+}
+
+.alarm-instructions {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 0 0 12px;
+}
+
+.alarm-popup-actions-trio {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn-alarm-dismiss {
+  background: var(--bg);
+  box-shadow: var(--raised-sm);
+  color: var(--muted);
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn-alarm-dismiss:hover {
+  color: #ef4444;
+  transform: translateY(-2px);
+}
+
 
 
