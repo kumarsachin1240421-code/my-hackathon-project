@@ -3780,57 +3780,40 @@ function initCareWellBotAndVoice() {
   if (closeChatBtn) closeChatBtn.addEventListener('click', closeDrawer);
   if (minimizeChatBtn) minimizeChatBtn.addEventListener('click', closeDrawer);
 
-  // Quick Action Pills
+  // Quick Action Prompt Chips
   document.querySelectorAll('.chat-action-pill').forEach(pill => {
     pill.addEventListener('click', () => {
-      const cmd = pill.getAttribute('data-command');
-      handleBotAction(cmd);
+      const prompt = pill.getAttribute('data-prompt') || pill.querySelector('span:not(.pill-icon)')?.textContent || pill.textContent.trim();
+      if (prompt && chatInput) {
+        chatInput.value = prompt;
+        handleSendMessage();
+      }
     });
   });
 
-  function handleBotAction(command) {
-    switch (command) {
-      case 'medication':
-        addUserMessage('Show today’s medication schedule');
-        addBotMessage('Opening your medication schedule for today. You can mark doses as taken or add new medicines here.');
-        selectView('Today');
-        break;
-      case 'reports':
-        addUserMessage('Track my progress & adherence report');
-        addBotMessage('Here is your live real-time Weekly Adherence & Patient Compliance report.');
-        selectView('Reports');
-        break;
-      case 'counselling':
-      case 'mental_health':
-        addUserMessage('I want to speak with a counselling specialist');
-        addBotMessage('Opening our certified Counselling Session section. You can book an Audio, Video, or Private Chat session with top specialists.');
-        selectView('CounsellingSession');
-        break;
-      case 'caregiver':
-        addUserMessage('Open caregiver adherence overview');
-        addBotMessage('Navigating to your Patient Medicine Report & Caregiver Adherence Dial.');
-        selectView('Reports');
-        break;
-      case 'health_question':
-        addUserMessage('I have a health question');
-        addBotMessage('I am here to help! Please type or speak your symptoms, nutrition queries, medication details, or ask me to perform actions across the website.');
-        break;
-      default:
-        break;
-    }
-  }
-
   function addUserMessage(text) {
     if (!chatBody) return;
+    const row = document.createElement('div');
+    row.className = 'chat-msg-row user-msg-row';
     const msg = document.createElement('div');
     msg.className = 'chat-msg-bubble user';
     msg.textContent = text;
-    chatBody.appendChild(msg);
+    row.appendChild(msg);
+    chatBody.appendChild(row);
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
   function addBotMessage(text, isHtml = false) {
     if (!chatBody) return;
+    const row = document.createElement('div');
+    row.className = 'chat-msg-row bot-msg-row';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-msg-avatar';
+    avatar.title = 'CareBot';
+    avatar.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;color:#10b981;">smart_toy</span>';
+    row.appendChild(avatar);
+
     const msg = document.createElement('div');
     msg.className = 'chat-msg-bubble bot';
     if (isHtml) {
@@ -3838,18 +3821,118 @@ function initCareWellBotAndVoice() {
     } else {
       msg.textContent = text;
     }
-    chatBody.appendChild(msg);
+    row.appendChild(msg);
+
+    chatBody.appendChild(row);
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
   function showTypingIndicator() {
     if (!chatBody) return null;
+    const row = document.createElement('div');
+    row.className = 'chat-msg-row bot-msg-row typing-row';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-msg-avatar';
+    avatar.title = 'CareBot';
+    avatar.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;color:#10b981;">smart_toy</span>';
+    row.appendChild(avatar);
+
     const indicator = document.createElement('div');
     indicator.className = 'chat-typing-bubble';
     indicator.innerHTML = '<span></span><span></span><span></span>';
-    chatBody.appendChild(indicator);
+    row.appendChild(indicator);
+
+    chatBody.appendChild(row);
     chatBody.scrollTop = chatBody.scrollHeight;
-    return indicator;
+    return row;
+  }
+
+  // ── CareBot Hospital Cards Generator ──
+  function getHospitalCardsHtml() {
+    const hospitals = [
+      {
+        name: 'MedPlus Hospital',
+        dist: '0.5 km',
+        status: 'Open 24/7',
+        desc: 'Multi-specialty emergency care, ICU & 24/7 outpatient pharmacy.'
+      },
+      {
+        name: 'Apollo Clinic',
+        dist: '1.2 km',
+        status: 'Open Now',
+        desc: 'Diagnostic lab services, specialized doctor consultations & routine care.'
+      },
+      {
+        name: 'Wellness Care Hospital',
+        dist: '2.1 km',
+        status: 'Open 24/7',
+        desc: 'Full-service inpatient hospital, trauma care, ambulance & cardiology unit.'
+      }
+    ];
+
+    return `
+      <div class="carebot-hospital-list">
+        ${hospitals.map(h => `
+          <div class="carebot-hospital-card">
+            <div class="carebot-hospital-header">
+              <div class="carebot-hospital-title-wrap">
+                <span class="carebot-hospital-icon">🏥</span>
+                <div>
+                  <h4 class="carebot-hospital-name">${escapeHtml(h.name)}</h4>
+                  <div class="carebot-hospital-meta">
+                    <span>📍 ${escapeHtml(h.dist)}</span>
+                    <span class="carebot-hospital-status">🟢 ${escapeHtml(h.status)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p style="font-size:11.5px;color:var(--muted);margin:0;line-height:1.4;">${escapeHtml(h.desc)}</p>
+            <a href="https://www.google.com/maps/search/hospitals+near+me" target="_blank" rel="noopener noreferrer" class="carebot-map-btn">
+              <span class="material-symbols-outlined" style="font-size:15px;">map</span>
+              <span>View on Map</span>
+            </a>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // ── CareBot Upcoming Medicine Schedule Sync Generator ──
+  function getUpcomingMedicinesHtml() {
+    const meds = typeof getLocalMedications === 'function' ? getLocalMedications() : [];
+    if (!meds || meds.length === 0) {
+      return `
+        <p style="margin:0 0 6px 0;">You have no medications scheduled for today in your active regimen.</p>
+        <button type="button" class="carebot-action-btn" onclick="openScheduleModal()">
+          <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+          <span>Add New Medication</span>
+        </button>
+      `;
+    }
+
+    return `
+      <p style="margin:0 0 6px 0;font-weight:600;">Here is your upcoming medication schedule for today:</p>
+      <div class="carebot-schedule-summary">
+        ${meds.map(m => `
+          <div class="carebot-med-item">
+            <div class="carebot-med-info">
+              <span>💊</span>
+              <strong>${escapeHtml(m.name)}</strong>
+              <span style="color:var(--muted);font-size:11px;">(${escapeHtml(m.dosage || '1 dose')})</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-weight:600;color:var(--teal, #0d9488);font-size:11px;">⏰ ${escapeHtml(m.scheduled_time || 'Daily')}</span>
+              <span class="carebot-med-status ${m.status === 'taken' ? 'taken' : 'pending'}">${m.status === 'taken' ? 'Taken' : 'Pending'}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button type="button" class="carebot-action-btn" onclick="selectView('Today');">
+        <span class="material-symbols-outlined" style="font-size:16px;">calendar_today</span>
+        <span>Open Today's Schedule</span>
+      </button>
+    `;
   }
 
   // ── Smart Patient Context Helper ──
@@ -3872,21 +3955,31 @@ function initCareWellBotAndVoice() {
     }
   }
 
-  // ── Dual-Role Gemini AI Integration ──
+  // ── CareBot Gemini AI Integration ──
   async function queryGeminiAI(userQuery) {
     const patientContext = getLivePatientContext();
-    const systemPrompt = `You are CareWell AI, an empathetic, highly intelligent clinical healthcare and wellness assistant for the CareWell platform.
+    const systemPrompt = `You are CareBot 👋, your 24/7 healthcare companion for the CareWell platform.
 
-YOUR CORE ROLES & CAPABILITIES:
-1. Clinical, Biological & Pharmacological Expertise: Explain complex anatomy, cellular biology, diseases, medications, dosages, and interactions in clear, supportive, and accessible language.
-2. Patient Medication & Context Awareness: When patient context is provided, personalize your guidance directly using their specific medications, adherence score, and schedule.
-3. Platform Navigation Guidance: Warmly guide patients to CareWell features (Today's Schedule, Medicine Reports, Counselling & Doctor Appointments, Emergency SOS, Nearby Pharmacies).
-4. Acute Triage & Emergency Safety: If the patient mentions red-flag symptoms (severe chest pressure/tightness, sudden shortness of breath, stroke symptoms), immediately advise emergency medical care (108 / 112).
+TONE & STYLE:
+- Warm, empathetic, structured, and easy to understand for all age groups.
+- Provide clear, concise answers without overly dense or overwhelming jargon.
 
-COMMUNICATION STYLE:
-- Empathetic, reassuring, clear, and scientifically grounded.
-- Always include this polite disclaimer at the end:
-\n\n*⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies.*`;
+CORE COMPETENCIES:
+1. Instant Answers & Symptom Guidance: When asked about symptoms (e.g., 'What are the symptoms of flu?'), respond with clean, concise bullet points (such as Fever, Cough, Sore throat, Body ache, Fatigue) followed by a brief medical disclaimer.
+2. Medicine Support: Provide dosage guidelines, indications, precautions, and common side effects (e.g., for 'How to take Paracetamol?': adult dosage usually 500mg-1000mg every 4-6 hours, max 4000mg/24h, take with water, avoid alcohol, check combination products to avoid accidental overdose, and common side effects).
+3. Nearby Hospitals & Clinics: When asked to find nearby medical facilities (e.g., 'Find a nearby hospital'), return structured items containing:
+   - Hospital / Clinic Name (e.g., MedPlus Hospital, Apollo Clinic, Wellness Care Hospital)
+   - Distance estimation (e.g., 0.5 km, 1.2 km)
+   - Operating status (e.g., Open 24/7, Open Now)
+   - Clickable 'View on Map' action link: https://www.google.com/maps/search/hospitals+near+me
+4. Appointment Assistance: Offer guidance on booking and scheduling doctor consultations (Audio, Video, or In-person appointments with certified general physicians, cardiologists, and mental health specialists in Counselling Sessions).
+5. Medicine Schedule Sync: If the user asks 'Show my upcoming medicines', summarize dosage times from their existing medicine list or schedule state (provided in context) in clean, structured points with medicine name, dosage, and scheduled time.
+
+EMERGENCY & ACUTE TRIAGE:
+If the patient mentions red-flag emergency symptoms (severe chest pain/pressure, sudden shortness of breath, slurred speech, acute facial droop, severe allergic reaction), immediately advise emergency medical assistance (Call 108 / 112) with calm, urgent first-aid instructions.
+
+ALWAYS INCLUDE THIS BRIEF DISCLAIMER AT THE END:
+⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies.`;
 
     // 1. Try direct Google Gemini API call if client-side API key is present
     if (GEMINI_CONFIG.apiKey) {
@@ -3960,6 +4053,9 @@ COMMUNICATION STYLE:
     if (!rawText) return '';
     let formatted = escapeHtml(rawText);
 
+    // Clickable links [Text](url)
+    formatted = formatted.replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="carebot-map-btn" style="display:inline-flex;width:auto;margin:6px 0;padding:6px 14px;">$1</a>');
+
     // Headers (### Header)
     formatted = formatted.replace(/^###\s+(.*?)$/gm, '<h4 style="margin:8px 0 4px 0;font-size:13px;font-weight:700;color:var(--teal, #0d9488);">$1</h4>');
     formatted = formatted.replace(/^##\s+(.*?)$/gm, '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:800;color:var(--teal, #0d9488);">$1</h3>');
@@ -3998,10 +4094,51 @@ COMMUNICATION STYLE:
 
     const qLower = query.toLowerCase();
 
-    // Check for acute emergency symptoms for immediate safety triage
+    // 1. Medicine Schedule Sync query: "Show my upcoming medicines"
+    if (qLower.includes('upcoming medicine') || qLower.includes('upcoming med') || qLower === 'show my medicines' || qLower === 'show my upcoming medicines') {
+      const scheduleHtml = getUpcomingMedicinesHtml();
+      addBotMessage(scheduleHtml, true);
+      chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Upcoming medication schedule summary provided.' });
+      return;
+    }
+
+    // 2. Doctor Appointment Assistance query: "Book an appointment"
+    if (qLower === 'book an appointment' || qLower.includes('book appointment') || qLower.includes('schedule doctor') || qLower.includes('book consultation')) {
+      const typingIndicator = showTypingIndicator();
+      const aiReply = await queryGeminiAI(query);
+      if (typingIndicator) typingIndicator.remove();
+
+      let replyHtml = aiReply ? formatAIResponse(aiReply) : `
+        <p>I would be delighted to assist you with scheduling a doctor consultation! You can book an Audio, Video, or In-person appointment with our licensed general physicians, cardiologists, and mental health specialists.</p>
+      `;
+      replyHtml += `
+        <button type="button" class="carebot-action-btn" onclick="if(typeof openDoctorBookingModal==='function')openDoctorBookingModal('doc-1');else selectView('CounsellingSession');">
+          <span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span>
+          <span>📅 Book Doctor Consultation Now</span>
+        </button>
+      `;
+      addBotMessage(replyHtml, true);
+      chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: aiReply || 'Doctor appointment booking guidance provided.' });
+      return;
+    }
+
+    // 3. Nearby Hospitals & Clinics query: "Find a nearby hospital"
+    if (qLower.includes('nearby hospital') || qLower.includes('find hospital') || qLower.includes('find a nearby hospital') || qLower.includes('nearby clinic')) {
+      const typingIndicator = showTypingIndicator();
+      const aiReply = await queryGeminiAI(query);
+      if (typingIndicator) typingIndicator.remove();
+
+      let replyHtml = aiReply ? formatAIResponse(aiReply) : '<p>Here are verified nearby medical facilities and emergency hospitals in your immediate area:</p>';
+      replyHtml += getHospitalCardsHtml();
+      addBotMessage(replyHtml, true);
+      chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: (aiReply || 'Nearby hospitals') + ' with map links.' });
+      return;
+    }
+
+    // 4. Check for acute emergency symptoms for immediate safety triage
     const isEmergency = /chest\s*(pain|tightness|pressure)|heart\s*attack|stroke|can('t|not)\s*breathe|severe\s*shortness|unconscious|passed\s*out|severe\s*bleeding/i.test(query);
 
-    // Differentiate explicit direct navigation/action commands from informational questions
+    // 5. Navigation / Action shortcuts
     const isExplicitAction = /^(open|go\s*to|navigate\s*to|take\s*me\s*to|switch\s*to|show\s*me|view)\b/i.test(query.trim()) ||
                              /^(sos|emergency|help\s*me|panic|dark\s*mode|light\s*mode|toggle\s*theme)$/i.test(query.trim()) ||
                              /^(mark\s*(all\s*)?taken|mark\s*as\s*taken|took\s*my\s*med(icine)?)$/i.test(query.trim()) ||
@@ -4087,9 +4224,8 @@ COMMUNICATION STYLE:
       }
     }
 
-    // ── Intelligent Conversational, Clinical, or Contextual Guidance (Gemini AI) ──
+    // 6. Intelligent Conversational & Healthcare Guidance (Gemini API)
     const typingIndicator = showTypingIndicator();
-
     const aiReply = await queryGeminiAI(query);
     if (typingIndicator) typingIndicator.remove();
 
@@ -4114,15 +4250,20 @@ COMMUNICATION STYLE:
       return;
     }
 
-    // Smart empathetic local fallback if offline or network unavailable
-    let smartReply = 'I understand your health query. For optimal wellness, ensure you stay hydrated, maintain balanced nutrition, and keep consistent sleep cycles.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
-    if (qLower.includes('headache') || qLower.includes('pain') || qLower.includes('fever')) {
+    // 7. Offline / Network Fallback with Full Healthcare Guidance
+    let smartReply = '';
+    if (qLower.includes('flu') || (qLower.includes('symptom') && qLower.includes('fever'))) {
+      smartReply = 'Common symptoms of the flu (influenza) include:\n* **Fever** (elevated body temperature, chills)\n* **Cough** (typically dry, hacking, or persistent)\n* **Sore throat** and difficulty swallowing\n* **Body ache** (diffuse muscular aches and joint stiffness)\n* **Fatigue** and general weakness\n* **Headache** and congestion\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies.';
+    } else if (qLower.includes('paracetamol') || qLower.includes('acetaminophen')) {
+      smartReply = 'Here are standard guidelines for taking **Paracetamol**:\n\n### Dosage Guidelines (Adults)\n* 500 mg to 1,000 mg (1-2 tablets) every 4 to 6 hours as needed.\n* Maximum 4,000 mg (4g) within a 24-hour window.\n* Swallow with plenty of water; can be taken with or without meals.\n\n### Precautions & Side Effects\n* Do not combine with other medicines containing paracetamol to avoid liver toxicity.\n* Avoid alcohol while taking paracetamol.\n* Rare side effects include mild stomach upset or skin rash. Seek urgent care for swelling or allergic reactions.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies.';
+    } else if (qLower.includes('headache') || qLower.includes('pain') || qLower.includes('fever')) {
       smartReply = 'If you are experiencing mild pain or fever, ensure adequate hydration and rest in a quiet, dark room. If symptoms persist or worsen, please consult a healthcare professional immediately in Counselling Sessions or trigger Emergency SOS.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
     } else if (qLower.includes('anxiety') || qLower.includes('stress') || qLower.includes('sad') || qLower.includes('sleep') || qLower.includes('heart')) {
       smartReply = 'For stress or elevated anxiety, try the 4-7-8 breathing technique: inhale for 4 seconds, hold for 7 seconds, and exhale slowly for 8 seconds. You can also book a confidential 1-on-1 session with our licensed therapists in the Counselling Session section.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
-    } else if (qLower.includes('nutrition') || qLower.includes('diet') || qLower.includes('food') || qLower.includes('vitamin')) {
-      smartReply = 'A balanced diet rich in leafy greens, whole grains, healthy fats, and adequate protein supports optimal cognitive and immune performance. Always take fat-soluble vitamins (like Vitamin D) alongside healthy meals.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
+    } else {
+      smartReply = 'I understand your health query. For optimal wellness, ensure you stay hydrated, maintain balanced nutrition, and keep consistent sleep cycles.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
     }
+
     addBotMessage(formatAIResponse(smartReply), true);
     chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: smartReply });
   }

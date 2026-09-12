@@ -5,6 +5,9 @@ import json
 import re
 import sys
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 def run_tests():
     print("=== Running CareWell Automated Verification Suite ===")
 

@@ -25,7 +25,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <!-- Stylesheets -->
   <link rel="stylesheet" href="static/style.css?v=3.0.0">
-  <link rel="stylesheet" href="static/views.css?v=3.0.0">
+  <link rel="stylesheet" href="static/views.css?v=3.2.0">
   <link rel="stylesheet" href="static/patient-report.css?v=3.0.0">
   <link rel="stylesheet" href="static/medadhere-report.css?v=3.0.0">
   <link rel="stylesheet" href="static/medadhere-fonts.css?v=3.0.0">
@@ -40,7 +40,7 @@
   <script src="static/sos.js?v=3.0.0" defer></script>
   <script src="static/alarm.js?v=3.0.0" defer></script>
   <script src="static/map.js?v=3.0.0" defer></script>
-  <script src="static/script.js?v=3.1.0" defer></script>
+  <script src="static/script.js?v=3.2.0" defer></script>
 </head>
 <body>
 
@@ -579,17 +579,17 @@
           </div>
         </div>
 
-        <!-- Sleek Neumorphic Chat Drawer (Image 2) -->
+        <!-- Sleek Neumorphic Chat Drawer (CareBot) -->
         <div class="carewell-chat-drawer" id="carewellChatDrawer" role="dialog" aria-modal="true" aria-hidden="true">
           <!-- Drawer Header -->
           <div class="chat-drawer-header">
             <div class="chat-header-brand">
               <div class="chat-brand-logo">
-                <span class="material-symbols-outlined" style="color:#10b981;font-size:20px;">smart_toy</span>
+                <span class="material-symbols-outlined" style="color:#10b981;font-size:22px;">smart_toy</span>
               </div>
               <div>
-                <strong>CareWell AI</strong>
-                <span>Online</span>
+                <strong>CareBot 👋</strong>
+                <span class="chat-brand-sub">Your 24/7 healthcare companion</span>
               </div>
             </div>
             <div class="chat-header-actions">
@@ -600,48 +600,51 @@
 
           <!-- Drawer Body: Messages & Quick Action Pills -->
           <div class="chat-drawer-body" id="chatDrawerBody">
-            <!-- Initial Welcome Message from Image 2 -->
-            <div class="chat-msg-bubble bot">
-              Hi there! 👋<br>
-              I'm <strong>CareWell AI</strong>, your health and wellbeing assistant.<br>
-              How can I help you today?
+            <!-- Initial Welcome Message from CareBot -->
+            <div class="chat-msg-row bot-msg-row">
+              <div class="chat-msg-avatar" title="CareBot">
+                <span class="material-symbols-outlined" style="font-size:18px;color:#10b981;">smart_toy</span>
+              </div>
+              <div class="chat-msg-bubble bot">
+                Hi! I'm CareBot 👋 Ask me anything about your health, medicines, hospitals or appointments.
+              </div>
             </div>
 
-            <!-- 4 Action Pills Matching Image 2 Reference -->
+            <!-- 5 Quick Action Prompt Chips -->
             <div class="chat-quick-actions" id="chatQuickActionPills">
-              <button type="button" class="chat-action-pill" data-command="medication">
+              <button type="button" class="chat-action-pill" data-prompt="What are the symptoms of flu?">
+                <div class="pill-icon">🌡️</div>
+                <span>What are the symptoms of flu?</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="Find a nearby hospital">
+                <div class="pill-icon">🏥</div>
+                <span>Find a nearby hospital</span>
+              </button>
+              <button type="button" class="chat-action-pill" data-prompt="How to take Paracetamol?">
                 <div class="pill-icon">💊</div>
-                <span>Medicine Reminders</span>
+                <span>How to take Paracetamol?</span>
               </button>
-              <button type="button" class="chat-action-pill" data-command="reports">
-                <div class="pill-icon">📊</div>
-                <span>Track My Progress</span>
+              <button type="button" class="chat-action-pill" data-prompt="Book an appointment">
+                <div class="pill-icon">📅</div>
+                <span>Book an appointment</span>
               </button>
-              <button type="button" class="chat-action-pill" data-command="counselling">
-                <div class="pill-icon">🧠</div>
-                <span>Counselling Session</span>
-              </button>
-              <button type="button" class="chat-action-pill" data-command="caregiver">
-                <div class="pill-icon">👥</div>
-                <span>Caregiver Support</span>
-              </button>
-              <button type="button" class="chat-action-pill" data-command="health_question">
-                <div class="pill-icon">❓</div>
-                <span>Ask a Health Question</span>
+              <button type="button" class="chat-action-pill" data-prompt="Show my upcoming medicines">
+                <div class="pill-icon">⏰</div>
+                <span>Show my upcoming medicines</span>
               </button>
             </div>
           </div>
 
           <!-- Drawer Footer: Text Input, Voice Mic, Send Button -->
           <div class="chat-drawer-footer">
-            <button type="button" class="chat-voice-btn" id="chatVoiceMicBtn" title="Speak Voice Command (e.g. 'Book doctor', 'Show reports', 'Trigger SOS')">
+            <button type="button" class="chat-voice-btn" id="chatVoiceMicBtn" title="Speak Voice Command">
               <span class="material-symbols-outlined" id="chatMicIcon">mic</span>
             </button>
             <div class="chat-input-wrap">
-              <input type="text" id="chatDrawerInput" class="chat-text-input" placeholder="Type or speak your message...">
+              <input type="text" id="chatDrawerInput" class="chat-text-input" placeholder="Type your question..." autocomplete="off">
             </div>
-            <button type="button" class="chat-send-btn" id="chatDrawerSendBtn" title="Send message">
-              <span class="material-symbols-outlined" style="font-size:18px;">send</span>
+            <button type="button" class="chat-send-btn" id="chatDrawerSendBtn" title="Send message" aria-label="Send message">
+              <span class="chat-send-chevron">&gt;</span>
             </button>
           </div>
         </div>

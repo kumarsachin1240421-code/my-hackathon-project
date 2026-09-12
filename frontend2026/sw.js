@@ -1,5 +1,5 @@
 /* CareWell — Progressive Web App Service Worker */
-const CACHE_NAME = 'carewell-cache-v4';
+const CACHE_NAME = 'carewell-cache-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',

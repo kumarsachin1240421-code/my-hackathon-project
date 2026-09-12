@@ -1964,27 +1964,60 @@ body.dark-mode .status-pill.confirmed {
   gap: 12px;
 }
 
+.chat-msg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-msg-row.bot-msg-row {
+  justify-content: flex-start;
+}
+
+.chat-msg-row.user-msg-row {
+  justify-content: flex-end;
+}
+
+.chat-msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 2px 2px 6px var(--shade), -2px -2px 6px var(--light);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 15px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
 .chat-msg-bubble {
   max-width: 85%;
   padding: 12px 16px;
   border-radius: 18px;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .chat-msg-bubble.bot {
   align-self: flex-start;
   background: var(--white-card);
   color: var(--ink);
-  box-shadow: 4px 4px 12px var(--shade-light), -4px -4px 12px var(--light);
+  box-shadow: 3px 3px 10px var(--shade-light), -3px -3px 10px var(--light);
+  border: 1px solid rgba(226, 232, 240, 0.7);
   border-bottom-left-radius: 4px;
+}
+
+[data-theme="dark"] .chat-msg-bubble.bot {
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-msg-bubble.user {
   align-self: flex-end;
-  background: var(--blue-gradient);
+  background: linear-gradient(135deg, #10b981 0%, #0d9488 100%);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(29, 104, 225, 0.35);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   border-bottom-right-radius: 4px;
 }
 
@@ -1998,7 +2031,7 @@ body.dark-mode .status-pill.confirmed {
   padding: 10px 14px;
   border-radius: 14px;
   background: var(--bg);
-  box-shadow: 4px 4px 10px var(--shade), -4px -4px 10px var(--light);
+  box-shadow: 3px 3px 8px var(--shade), -3px -3px 8px var(--light);
   border: 1px solid rgba(255, 255, 255, 0.6);
   font-size: 12px;
   font-weight: 600;
@@ -2006,26 +2039,28 @@ body.dark-mode .status-pill.confirmed {
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .chat-action-pill:hover {
   transform: translateY(-2px);
-  color: var(--blue);
-  box-shadow: 6px 6px 14px var(--shade), -6px -6px 14px var(--light);
+  color: var(--teal, #0d9488);
+  box-shadow: 5px 5px 12px var(--shade), -5px -5px 12px var(--light);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .chat-action-pill .pill-icon {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--blue-light);
-  color: var(--blue);
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
   display: grid;
   place-items: center;
-  font-size: 15px;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
 .chat-drawer-footer {
@@ -2043,8 +2078,15 @@ body.dark-mode .status-pill.confirmed {
   align-items: center;
   background: var(--bg);
   box-shadow: var(--inset);
-  border-radius: 20px;
-  padding: 6px 12px;
+  border-radius: 24px;
+  padding: 6px 14px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-input-wrap:focus-within {
+  border-color: #10b981;
+  box-shadow: var(--inset), 0 0 0 2px rgba(16, 185, 129, 0.15);
 }
 
 .chat-text-input {
@@ -2059,21 +2101,33 @@ body.dark-mode .status-pill.confirmed {
 }
 
 .chat-send-btn, .chat-voice-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
   flex-shrink: 0;
 }
 
 .chat-send-btn {
-  background: var(--blue-gradient);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(29, 104, 225, 0.35);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.chat-send-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55);
+}
+
+.chat-send-chevron {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  margin-left: 2px;
 }
 
 .chat-voice-btn {
@@ -2414,6 +2468,172 @@ body.dark-mode .adherence-streak-badge {
   font-style: italic;
   line-height: 1.35;
 }
+
+/* ── CareBot Dedicated Hospital Cards & Actions ── */
+.carebot-hospital-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 6px 0;
+  width: 100%;
+}
+
+.carebot-hospital-card {
+  background: var(--bg);
+  box-shadow: 2px 2px 8px var(--shade), -2px -2px 8px var(--light);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.carebot-hospital-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 12px var(--shade), -4px -4px 12px var(--light);
+  border-color: #10b981;
+}
+
+.carebot-hospital-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.carebot-hospital-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carebot-hospital-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.carebot-hospital-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.carebot-hospital-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.carebot-hospital-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.carebot-map-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none !important;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2px;
+}
+
+.carebot-map-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.5);
+}
+
+.carebot-schedule-summary {
+  margin: 10px 0 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.carebot-med-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.carebot-med-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.carebot-med-status {
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+}
+
+.carebot-med-status.taken {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.carebot-med-status.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.carebot-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #10b981 0%, #0d9488 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.carebot-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.5);
+}
+
 
 /* ═══════════════════════════════════════════════
    User Review Section in Settings View (Requirement 2)
