@@ -237,11 +237,13 @@ def run_tests():
     assert manifest_data.get("short_name") == "CareWell"
     assert manifest_data.get("display") == "standalone"
     assert manifest_data.get("theme_color") == "#2563eb"
+    assert manifest_data.get("start_url") == "./"
+    assert manifest_data.get("scope") == "./"
     icons = manifest_data.get("icons", [])
     icon_srcs = [i.get("src") for i in icons]
-    assert "/icon-192.png" in icon_srcs, "/icon-192.png missing in public/manifest.json"
-    assert "/icon-512.png" in icon_srcs, "/icon-512.png missing in public/manifest.json"
-    print("[PASS] public/manifest.json configured with square /icon-192.png and /icon-512.png")
+    assert "icon-192.png" in icon_srcs, "icon-192.png missing in public/manifest.json"
+    assert "icon-512.png" in icon_srcs, "icon-512.png missing in public/manifest.json"
+    print("[PASS] public/manifest.json configured with relative start_url, scope, icon-192.png, and icon-512.png")
 
     print("\n=== ALL AUTOMATED VERIFICATION CHECKS PASSED PERFECTLY ===")
 

@@ -4,17 +4,17 @@ import '@/style.css';
 export const metadata: Metadata = {
   title: 'CareWell — Your Everyday Health & Wellbeing Companion',
   description: 'Smart medicine reminders, caregiver tracking, and emergency care',
-  manifest: '/manifest.json',
+  manifest: 'manifest.json',
   themeColor: '#2563eb',
   icons: {
     icon: [
-      { url: '/favicon.ico' },
-      { url: '/favicon.png', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: 'favicon.ico' },
+      { url: 'favicon.png', type: 'image/png' },
+      { url: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: 'icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };
