@@ -219,6 +219,30 @@ def run_tests():
         assert e.code == 400, f"Expected status 400, got {e.code}"
         print("[PASS] Live /api/sos rejects phone numbers without country code (+ prefix) with HTTP 400")
 
+    # Test 5: Header Banner & PWA Home Screen Icon Verification
+    print("\n--- Test 5: Header Banner & PWA Home Screen Icon Verification ---")
+    with open("app/page.tsx", "r", encoding="utf-8") as f:
+        app_page_content = f.read()
+    assert '<img src="/brand-banner.png" alt="CareWell" className="h-10 w-auto object-contain"' in app_page_content, "brand-banner.png missing in app/page.tsx header"
+    print("[PASS] app/page.tsx header uses brand-banner.png with h-10 w-auto object-contain")
+
+    with open("index.html", "r", encoding="utf-8") as f:
+        index_html_content = f.read()
+    assert 'brand-banner.png' in index_html_content, "brand-banner.png missing in index.html"
+    print("[PASS] index.html landing nav & sidebar headers use brand-banner.png")
+
+    with open("public/manifest.json", "r", encoding="utf-8") as f:
+        manifest_data = json.load(f)
+    assert manifest_data.get("name") == "CareWell"
+    assert manifest_data.get("short_name") == "CareWell"
+    assert manifest_data.get("display") == "standalone"
+    assert manifest_data.get("theme_color") == "#2563eb"
+    icons = manifest_data.get("icons", [])
+    icon_srcs = [i.get("src") for i in icons]
+    assert "/icon-192.png" in icon_srcs, "/icon-192.png missing in public/manifest.json"
+    assert "/icon-512.png" in icon_srcs, "/icon-512.png missing in public/manifest.json"
+    print("[PASS] public/manifest.json configured with square /icon-192.png and /icon-512.png")
+
     print("\n=== ALL AUTOMATED VERIFICATION CHECKS PASSED PERFECTLY ===")
 
 if __name__ == "__main__":

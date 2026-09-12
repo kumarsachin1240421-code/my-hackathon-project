@@ -23,15 +23,11 @@ export default function TriageDashboardPage() {
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-            <span className="text-xl">💊</span>
-          </div>
-          <div>
-            <h1 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
-              CarePill <span className="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800">AI Triage & Radar</span>
-            </h1>
-            <p className="text-[11px] text-slate-400">Intelligent Symptom Triage & Bayesian Hospital Routing</p>
-          </div>
+          <img src="/brand-banner.png" alt="CareWell" className="h-10 w-auto object-contain" />
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs bg-cyan-950 text-cyan-400 px-2.5 py-1 rounded-full border border-cyan-800 font-semibold tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            AI Triage &amp; Radar
+          </span>
         </div>
 
         {/* Emergency Quick Action Bar */}
