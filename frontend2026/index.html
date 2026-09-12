@@ -7,6 +7,12 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>CareWell - Your Everyday Health & Wellbeing Companion</title>
+  <link rel="manifest" href="/manifest.json" id="manifestLink" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CareWell" />
   <link rel="icon" type="image/png" href="static/favicon.png">
   <link rel="icon" type="image/svg+xml" href="static/logo.svg">
   <link rel="apple-touch-icon" href="static/carewell-icon.png">
@@ -63,6 +69,10 @@
       <!-- Right Actions: Login CTA + Cloud Quote Badge Aligned Directly Underneath -->
       <div class="landing-nav-actions-col">
         <div class="landing-nav-actions">
+          <button class="btn-install-pwa" id="pwaInstallBtn" type="button" aria-label="Download or Install CareWell App" onclick="triggerPwaInstall()">
+            <span class="pwa-btn-icon">📱</span>
+            <span class="btn-text">Download App</span>
+          </button>
           <button class="btn-login" data-auth="login" type="button" aria-label="Open Login modal">
             <span class="material-symbols-outlined">person</span>
             <span class="btn-text">Login</span>
@@ -415,6 +425,7 @@
           <strong style="font-size:18px;letter-spacing:-0.02em;color:var(--ink);">CareWell</strong>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
+          <button class="round-button btn-install-pwa-round" id="mobilePwaInstallBtn" onclick="triggerPwaInstall()" title="Download / Install App" aria-label="Download App" style="display:inline-flex;align-items:center;justify-content:center;font-size:15px;">📱</button>
           <button class="round-button" id="appThemeToggleBtn" title="Toggle Theme" aria-label="Toggle Dark/Light Mode"><span class="material-symbols-outlined">dark_mode</span></button>
           <button class="round-button" id="dateButton" aria-label="Calendar"><span class="material-symbols-outlined">calendar_today</span></button>
         </div>
@@ -786,6 +797,78 @@
 
   <!-- Mobile sidebar drawer -->
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Progressive Web App (PWA) Install Manager & Service Worker Registration -->
+  <script>
+    let deferredPrompt = null;
+
+    // Capture the browser's beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtns = document.querySelectorAll('.btn-install-pwa, #pwaInstallBtn, #mobilePwaInstallBtn');
+      installBtns.forEach(btn => {
+        btn.style.display = 'inline-flex';
+      });
+    });
+
+    // Handle install button clicks
+    async function triggerPwaInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('CareWell PWA install outcome:', outcome);
+        if (outcome === 'accepted') {
+          deferredPrompt = null;
+        }
+      } else {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          if (typeof showToast === 'function') {
+            showToast('To install CareWell on iOS: tap the Share button ⎋ and select "Add to Home Screen" ➕');
+          } else {
+            alert('To install CareWell on iOS: tap the Share button and select "Add to Home Screen".');
+          }
+        } else {
+          if (typeof showToast === 'function') {
+            showToast('To install CareWell: open your browser menu (⋮) and select "Install app" or "Add to Home Screen".');
+          } else {
+            alert('To install CareWell: open your browser menu and select "Install app" or "Add to Home Screen".');
+          }
+        }
+      }
+    }
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      console.log('CareWell App successfully installed');
+      if (typeof showToast === 'function') {
+        showToast('CareWell App installed successfully! 🎉');
+      }
+    });
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        const isSubdir = window.location.pathname.length > 1 && !window.location.pathname.endsWith('.html');
+        const basePath = isSubdir ? (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)) : '/';
+        const swUrl = (basePath !== '/' && !window.location.pathname.startsWith('/api')) ? (basePath + 'sw.js') : '/sw.js';
+
+        if (basePath !== '/' && !window.location.pathname.startsWith('/api')) {
+          const mLink = document.getElementById('manifestLink') || document.querySelector('link[rel="manifest"]');
+          if (mLink) mLink.setAttribute('href', basePath + 'manifest.json');
+        }
+
+        navigator.serviceWorker.register(swUrl)
+          .then(reg => console.log('CareWell Service Worker Registered', reg.scope))
+          .catch(err => {
+            navigator.serviceWorker.register('/sw.js')
+              .then(reg => console.log('CareWell Service Worker Registered'))
+              .catch(err2 => console.error('Service Worker Registration Error:', err2));
+          });
+      });
+    }
+  </script>
 </body>
 </html>
 

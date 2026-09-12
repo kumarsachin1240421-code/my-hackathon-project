@@ -207,6 +207,56 @@ body.dark-mode, [data-theme="dark"] {
   box-shadow: var(--inset);
 }
 
+/* Neumorphic PWA Install / Download App Button */
+.btn-install-pwa {
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  outline: none;
+  background: var(--bg);
+  color: #0284c7;
+  box-shadow: 5px 5px 12px var(--shade-light), -5px -5px 12px var(--light);
+}
+
+.btn-install-pwa:hover {
+  transform: translateY(-2px);
+  box-shadow: 7px 7px 16px var(--shade), -7px -7px 16px var(--light);
+  color: #0369a1;
+}
+
+.btn-install-pwa:active {
+  transform: translateY(0);
+  box-shadow: var(--inset);
+}
+
+.btn-install-pwa .pwa-btn-icon {
+  font-size: 15px;
+  display: inline-block;
+  transform: translateY(-0.5px);
+}
+
+body.dark-mode .btn-install-pwa,
+[data-theme="dark"] .btn-install-pwa {
+  color: #38bdf8;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 4px 10px #070d19, -4px -4px 10px #1e293b;
+}
+
+body.dark-mode .btn-install-pwa:hover,
+[data-theme="dark"] .btn-install-pwa:hover {
+  box-shadow: 6px 6px 14px #070d19, -6px -6px 14px #1e293b;
+  color: #7dd3fc;
+}
+
 .btn-signup .material-symbols-outlined,
 .btn-login .material-symbols-outlined {
   font-size: 19px;

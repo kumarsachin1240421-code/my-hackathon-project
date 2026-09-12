@@ -1,13 +1,21 @@
-/* CarePill — Service Worker for background notifications */
+/* CareWell — Progressive Web App Service Worker */
+const CACHE_NAME = 'carewell-cache-v1';
 
-const CACHE_NAME = 'carepill-v1';
-
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
 });
 
-/* Handle notification clicks — focus the app tab */
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
+});
+
+/* Handle medication reminders & alarm notification clicks */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
