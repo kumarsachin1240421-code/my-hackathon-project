@@ -264,7 +264,7 @@ export const SymptomTriageChatbot: React.FC<SymptomTriageChatbotProps> = ({
 
       {/* Input Form */}
       <form
-        onSubmit={(e) => {
+        onSubmit={(e: any) => {
           e.preventDefault();
           handleSend();
         }}
@@ -273,7 +273,7 @@ export const SymptomTriageChatbot: React.FC<SymptomTriageChatbotProps> = ({
         <input
           type="text"
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={(e: any) => setInputText(e.target.value)}
           placeholder="Describe symptoms (e.g. fever, headache, chest tightness)..."
           disabled={isLoading}
           className="flex-1 bg-slate-900 text-white placeholder-slate-500 text-sm px-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 disabled:opacity-60"

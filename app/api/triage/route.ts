@@ -138,7 +138,7 @@ JSON SCHEMA:
     const prompt = `Patient Conversation History:\n${conversationContext}\n\nEvaluate the latest symptoms and produce the required JSON triage response.`;
 
     // Attempt preferred models in sequence with graceful fallback
-    const candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+    const candidateModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
     let triageData: TriageResponse | null = null;
 
     for (const model of candidateModels) {

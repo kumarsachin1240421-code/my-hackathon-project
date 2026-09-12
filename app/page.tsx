@@ -26,7 +26,7 @@ export default function TriageDashboardPage() {
           <img src="/brand-banner.png" alt="CareWell" className="h-10 w-auto object-contain" />
           <span className="hidden sm:inline-flex items-center gap-1.5 text-xs bg-cyan-950 text-cyan-400 px-2.5 py-1 rounded-full border border-cyan-800 font-semibold tracking-wide">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-            AI Triage &amp; Radar
+            AI Triage & Radar
           </span>
         </div>
 

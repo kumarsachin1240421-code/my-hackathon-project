@@ -3703,7 +3703,7 @@ const GEMINI_CONFIG = {
   apiKey: (typeof process !== 'undefined' && process.env && (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY)) || 
           (typeof window !== 'undefined' && (window.GEMINI_API_KEY || window.VITE_GEMINI_API_KEY)) || 
           '',
-  models: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest']
+  models: ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest']
 };
 
 function initCareWellBotAndVoice() {
@@ -3718,6 +3718,7 @@ function initCareWellBotAndVoice() {
   const micBtn = document.getElementById('chatVoiceMicBtn');
   const micIcon = document.getElementById('chatMicIcon');
   const chatBody = document.getElementById('chatDrawerBody');
+  const chatHistory = [];
 
   if (!chatDrawer) return;
 
@@ -3841,48 +3842,61 @@ function initCareWellBotAndVoice() {
     return indicator;
   }
 
+  // ── Smart Patient Context Helper ──
+  function getLivePatientContext() {
+    try {
+      const userObj = (typeof AuthManager !== 'undefined' && AuthManager.getUser && AuthManager.getUser()) || {};
+      const userName = userObj.name || (typeof currentUser !== 'undefined' && currentUser?.name) || 'CareWell Patient';
+      const meds = typeof getLocalMedications === 'function' ? getLocalMedications() : [];
+      const medSummary = meds.length > 0 
+        ? meds.map((m, i) => `${i + 1}. ${m.name} (${m.dosage}) scheduled at ${m.scheduled_time} - Status: ${m.status === 'taken' ? 'Taken' : 'Pending'}`).join('\n')
+        : 'No medications currently scheduled for today.';
+      const reports = typeof getLocalWeeklyReports === 'function' ? getLocalWeeklyReports() : {};
+      const adherence = reports.adherence !== undefined ? reports.adherence : (meds.length ? Math.round(meds.reduce((sum, m) => sum + (m.adherence || 95), 0) / meds.length) : 100);
+      const streak = reports.streak || 1;
+      const lowMeds = meds.filter(m => Number(m.stock) <= 8).map(m => `${m.name} (${m.stock} doses remaining)`).join(', ');
+
+      return `Patient: ${userName}\nToday's Scheduled Medications:\n${medSummary}\nWeekly Adherence: ${adherence}%\nStreak: ${streak} day(s)\nLow Stock Warnings: ${lowMeds || 'None (all stocks sufficient)'}`;
+    } catch (e) {
+      return '';
+    }
+  }
+
   // ── Dual-Role Gemini AI Integration ──
   async function queryGeminiAI(userQuery) {
-    const systemPrompt = `You are CareWell AI, an empathetic, intelligent dual-role healthcare and wellness companion and site operator for the CarePill health platform.
+    const patientContext = getLivePatientContext();
+    const systemPrompt = `You are CareWell AI, an empathetic, highly intelligent clinical healthcare and wellness assistant for the CareWell platform.
 
-You seamlessly perform TWO core roles:
+YOUR CORE ROLES & CAPABILITIES:
+1. Clinical, Biological & Pharmacological Expertise: Explain complex anatomy, cellular biology, diseases, medications, dosages, and interactions in clear, supportive, and accessible language.
+2. Patient Medication & Context Awareness: When patient context is provided, personalize your guidance directly using their specific medications, adherence score, and schedule.
+3. Platform Navigation Guidance: Warmly guide patients to CareWell features (Today's Schedule, Medicine Reports, Counselling & Doctor Appointments, Emergency SOS, Nearby Pharmacies).
+4. Acute Triage & Emergency Safety: If the patient mentions red-flag symptoms (severe chest pressure/tightness, sudden shortness of breath, stroke symptoms), immediately advise emergency medical care (108 / 112).
 
-1. WEBSITE SITE OPERATOR (Intent Triggering & Guidance):
-- When the user asks to operate the website or view features, guide them warmly and clearly.
-- Detect intents for:
-  * Navigating to Counselling Sessions, Reports, Today's Schedule, Refills, Pharmacy, Settings, or Medication History.
-  * Triggering Emergency SOS countdown protocol.
-  * Adding a new medication schedule or dosage.
-  * Marking medications as taken.
-  * Querying live medication schedule, progress fraction, pending doses, inventory stock, or adherence score.
-  * Toggling dark/light theme.
+COMMUNICATION STYLE:
+- Empathetic, reassuring, clear, and scientifically grounded.
+- Always include this polite disclaimer at the end:
+\n\n*⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies.*`;
 
-2. HEALTHCARE & HUMAN BODY KNOWLEDGE ASSISTANT:
-- Answer general health, wellness, nutrition, anatomy, biology, and lifestyle queries clearly, accurately, and empathetically.
-- Provide practical explanations for common symptoms, medical terms, anatomical functions, and healthy routines.
-- ALWAYS append this polite standard medical disclaimer at the end of your response:
-"\\n\\n*Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.*"
-
-Keep responses concise (2 to 4 paragraphs maximum), clean, well formatted, and supportive.`;
-
-    // 1. Try direct Google Gemini API call with fallback model list
+    // 1. Try direct Google Gemini API call if client-side API key is present
     if (GEMINI_CONFIG.apiKey) {
       for (const model of GEMINI_CONFIG.models) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
+          const contents = chatHistory.slice(-6).map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+          }));
+          contents.push({ role: 'user', parts: [{ text: userQuery }] });
+
           const body = {
             systemInstruction: {
-              parts: [{ text: systemPrompt }]
+              parts: [{ text: `${systemPrompt}\n\nPATIENT LIVE CONTEXT:\n${patientContext}` }]
             },
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: userQuery }]
-              }
-            ],
+            contents,
             generationConfig: {
               temperature: 0.7,
-              maxOutputTokens: 800
+              maxOutputTokens: 1000
             }
           };
 
@@ -3894,7 +3908,7 @@ Keep responses concise (2 to 4 paragraphs maximum), clean, well formatted, and s
 
           if (res.ok) {
             const data = await res.json();
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+            if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
               return data.candidates[0].content.parts[0].text;
             }
           }
@@ -3902,38 +3916,63 @@ Keep responses concise (2 to 4 paragraphs maximum), clean, well formatted, and s
       }
     }
 
-    // 2. Try backend endpoint proxy /api/ai/chat
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userQuery })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.reply || data.response) {
-          return data.reply || data.response;
+    // 2. Try backend endpoint proxy /api/ai/chat or /api/chat with multi-turn & patient context
+    const endpoints = ['/api/ai/chat', '/api/chat'];
+    for (const ep of endpoints) {
+      try {
+        const payloadMessages = chatHistory.slice(-8).map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+        payloadMessages.push({ role: 'user', content: userQuery });
+
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userQuery,
+            messages: payloadMessages,
+            context: patientContext
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const reply = data.reply || data.response || data.message;
+          if (reply) return reply;
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
     return null;
   }
 
   function formatAIResponse(rawText) {
     if (!rawText) return '';
-    // Format bold markdown and line breaks safely
-    let formatted = escapeHtml(rawText)
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, '<br>');
+    let formatted = escapeHtml(rawText);
 
-    // Add disclaimer styling if present
+    // Headers (### Header)
+    formatted = formatted.replace(/^###\s+(.*?)$/gm, '<h4 style="margin:8px 0 4px 0;font-size:13px;font-weight:700;color:var(--teal, #0d9488);">$1</h4>');
+    formatted = formatted.replace(/^##\s+(.*?)$/gm, '<h3 style="margin:10px 0 4px 0;font-size:14px;font-weight:800;color:var(--teal, #0d9488);">$1</h3>');
+
+    // Bold & Italics
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Bullet points (* or -)
+    formatted = formatted.replace(/^\s*[\*\-]\s+(.*?)$/gm, '<li style="margin-left:14px;list-style-type:disc;margin-bottom:3px;">$1</li>');
+    formatted = formatted.replace(/((?:<li[^>]*>.*?<\/li>\s*)+)/gs, '<ul style="margin:6px 0;padding-left:4px;">$1</ul>');
+
+    // Numbered lists
+    formatted = formatted.replace(/^\s*(\d+)\.\s+(.*?)$/gm, '<li style="margin-left:14px;list-style-type:decimal;margin-bottom:3px;">$2</li>');
+
+    // Line breaks
+    formatted = formatted.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+
+    // Disclaimer styling
     if (formatted.includes('Disclaimer:')) {
       formatted = formatted.replace(
-        /(\*?Disclaimer:.*?\*?)$/i,
-        '<span class="chat-disclaimer">⚠️ $1</span>'
+        /(\*?⚠️?\s*Disclaimer:.*?\*?)$/i,
+        '<span class="chat-disclaimer" style="display:block;margin-top:10px;padding:8px 12px;background:rgba(13,148,136,0.08);border-left:3px solid var(--teal, #0d9488);border-radius:4px;font-size:11px;color:#94a3b8;">⚠️ $1</span>'
       );
     }
     return formatted;
@@ -3949,149 +3988,124 @@ Keep responses concise (2 to 4 paragraphs maximum), clean, well formatted, and s
 
     const qLower = query.toLowerCase();
 
-    // ── ROLE 1: Operator Site Commands Execution ──
-    // Navigation Triggers
-    if (qLower.includes('counselling') || qLower.includes('counsel') || qLower.includes('therapy') || qLower.includes('therapist') || qLower.includes('mental health') || qLower.includes('psychiatrist') || qLower.includes('book doctor') || qLower.includes('consult doctor')) {
-      addBotMessage('🧠 Navigating to <strong>Counselling Session</strong> consultations and doctor appointments.', true);
-      selectView('CounsellingSession');
-      return;
-    }
-    if (qLower.includes('report') || qLower.includes('adherence') || qLower.includes('streak') || qLower.includes('compliance') || qLower.includes('caregiver')) {
-      addBotMessage('📊 Opening your <strong>Patient Medicine Report &amp; Weekly Adherence Dial</strong>.', true);
-      selectView('Reports');
-      return;
-    }
-    if (qLower.includes('dashboard') || qLower.includes('today') || qLower.includes('home') || qLower.includes('main page')) {
-      addBotMessage('🏠 Navigating to <strong>Today\'s Schedule &amp; Dashboard</strong>.', true);
-      selectView('Today');
-      return;
-    }
-    if (qLower.includes('schedule') && !qLower.includes('add') && !qLower.includes('new')) {
-      addBotMessage('📅 Opening full <strong>Medication Schedule</strong> view.', true);
-      selectView('Schedule');
-      return;
-    }
-    if (qLower.includes('refill') || qLower.includes('order med') || qLower.includes('buy med') || qLower.includes('inventory')) {
-      addBotMessage('💊 Opening <strong>Medication Refills &amp; Online Pharmacy</strong>.', true);
-      selectView('Refills');
-      return;
-    }
-    if (qLower.includes('pharmacy') || qLower.includes('chemist') || qLower.includes('near me') || qLower.includes('medical store')) {
-      addBotMessage('📍 Opening <strong>Nearby Pharmacies &amp; Medical Stores</strong>.', true);
-      selectView('Pharmacy');
-      return;
-    }
-    if (qLower.includes('setting') || qLower.includes('profile') || qLower.includes('preference')) {
-      addBotMessage('⚙️ Opening <strong>Settings &amp; Profile Preferences</strong>.', true);
-      selectView('Settings');
-      return;
-    }
-    if (qLower.includes('history') || qLower.includes('logs') || qLower.includes('past dose')) {
-      addBotMessage('📋 Opening <strong>Medication History</strong> records.', true);
-      selectView('History');
-      return;
-    }
+    // Check for acute emergency symptoms for immediate safety triage
+    const isEmergency = /chest\s*(pain|tightness|pressure)|heart\s*attack|stroke|can('t|not)\s*breathe|severe\s*shortness|unconscious|passed\s*out|severe\s*bleeding/i.test(query);
 
-    // Action Triggers
-    if (qLower.includes('sos') || qLower.includes('emergency') || qLower.includes('ambulance') || qLower.includes('help me') || qLower.includes('panic')) {
-      addBotMessage('🚨 <strong>Activating Emergency SOS countdown protocol!</strong>', true);
-      if (typeof SOSManager !== 'undefined') SOSManager.openSOS();
-      return;
-    }
-    if (qLower.includes('add med') || qLower.includes('new med') || qLower.includes('add schedule') || qLower.includes('new schedule') || qLower.includes('create schedule')) {
-      addBotMessage('💊 Opening the <strong>New Medication Schedule</strong> dialog.', true);
-      openScheduleModal();
-      return;
-    }
-    if (qLower.includes('mark taken') || qLower.includes('mark as taken') || qLower.includes('took my medicine') || qLower.includes('taken morning')) {
-      const meds = getLocalMedications();
-      const pending = meds.find(m => m.status !== 'taken');
-      if (pending) {
-        updateLocalDose(pending.id, 'taken');
-        renderDashboard(getLocalDashboard());
-        addBotMessage(`✅ Marked <strong>${escapeHtml(pending.name)}</strong> as taken for today.`, true);
-      } else {
-        addBotMessage('All your scheduled doses for today are already marked as taken! 🌟');
+    // Differentiate explicit direct navigation/action commands from informational questions
+    const isExplicitAction = /^(open|go\s*to|navigate\s*to|take\s*me\s*to|switch\s*to|show\s*me|view)\b/i.test(query.trim()) ||
+                             /^(sos|emergency|help\s*me|panic|dark\s*mode|light\s*mode|toggle\s*theme)$/i.test(query.trim()) ||
+                             /^(mark\s*(all\s*)?taken|mark\s*as\s*taken|took\s*my\s*med(icine)?)$/i.test(query.trim()) ||
+                             /^(add\s*med(icine)?|new\s*med(icine)?|add\s*schedule|new\s*schedule)$/i.test(query.trim());
+
+    if (isExplicitAction) {
+      if (qLower.includes('counsel') || qLower.includes('therap') || qLower.includes('psychiat') || qLower.includes('doctor')) {
+        addBotMessage('🧠 Navigating to <strong>Counselling Session</strong> consultations and doctor appointments.', true);
+        selectView('CounsellingSession');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Navigating to Counselling Session consultations and doctor appointments.' });
+        return;
       }
-      return;
-    }
-    if (qLower.includes('dark mode') || qLower.includes('light mode') || qLower.includes('toggle theme') || qLower.includes('change theme')) {
-      toggleTheme();
-      addBotMessage('🌓 Theme toggled successfully.');
-      return;
-    }
-
-    // Live Site Data Queries
-    if (qLower.includes('what med') || qLower.includes('medicines scheduled') || qLower.includes('what is scheduled') || qLower.includes('scheduled today') || qLower.includes('today\'s med') || qLower.includes('my medications')) {
-      const meds = getLocalMedications();
-      if (!meds.length) {
-        addBotMessage('You currently have <strong>0 medications scheduled for today</strong>. Would you like to add one by clicking <a href="javascript:openScheduleModal()" style="color:var(--teal);text-decoration:underline;">+ New Schedule</a>?', true);
-      } else {
-        const medListStr = meds.map((m, i) => `${i + 1}. <strong>${escapeHtml(m.name)}</strong> (${escapeHtml(m.dosage)}) at ⏰ <em>${escapeHtml(m.scheduled_time)}</em> — ${m.status === 'taken' ? '✅ Taken' : '⏳ Pending'}`).join('<br>');
-        addBotMessage(`Here are your scheduled medications for today:<br><br>${medListStr}`, true);
+      if (qLower.includes('report') || qLower.includes('compliance') || qLower.includes('caregiver')) {
+        addBotMessage('📊 Opening your <strong>Patient Medicine Report &amp; Weekly Adherence Dial</strong>.', true);
+        selectView('Reports');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening your Patient Medicine Report & Weekly Adherence Dial.' });
+        return;
       }
-      return;
-    }
-
-    if (qLower.includes('progress') || qLower.includes('how many taken') || qLower.includes('doses taken') || qLower.includes('daily progress') || qLower.includes('how much taken')) {
-      const meds = getLocalMedications();
-      const total = meds.length;
-      const taken = meds.filter(m => m.status === 'taken').length;
-      const pct = total > 0 ? Math.round((taken / total) * 100) : 0;
-      addBotMessage(`Your daily medication progress is strictly <strong>${taken} of ${total} taken</strong> (${pct}% completed). ${total === 0 ? 'No active schedules added yet.' : pct === 100 ? 'All doses taken for today! Wonderful job! 🎉' : `You have ${total - taken} pending dose(s) remaining.`}`, true);
-      return;
-    }
-
-    if (qLower.includes('pending') || qLower.includes('how many pending') || qLower.includes('what is pending') || qLower.includes('remaining doses')) {
-      const meds = getLocalMedications();
-      const pending = meds.filter(m => m.status !== 'taken');
-      if (pending.length === 0) {
-        addBotMessage('You currently have <strong>0 pending doses</strong> for today! Everything is complete or no schedules are active.', true);
-      } else {
-        const pStr = pending.map((m, i) => `${i + 1}. <strong>${escapeHtml(m.name)}</strong> (${escapeHtml(m.dosage)}) scheduled at ⏰ ${escapeHtml(m.scheduled_time)}`).join('<br>');
-        addBotMessage(`You have <strong>${pending.length} pending dose(s)</strong> remaining for today:<br><br>${pStr}`, true);
+      if (qLower.includes('dashboard') || qLower.includes('today') || qLower.includes('home')) {
+        addBotMessage('🏠 Navigating to <strong>Today\'s Schedule &amp; Dashboard</strong>.', true);
+        selectView('Today');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Navigating to Today\'s Schedule & Dashboard.' });
+        return;
       }
-      return;
-    }
-
-    if (qLower.includes('stock') || qLower.includes('refill status') || qLower.includes('low stock') || qLower.includes('inventory status')) {
-      const meds = getLocalMedications();
-      if (!meds.length) {
-        addBotMessage('No medications currently registered in your inventory.');
-      } else {
-        const lowMeds = meds.filter(m => Number(m.stock) <= 8);
-        if (lowMeds.length > 0) {
-          const lowStr = lowMeds.map(m => `⚠️ <strong>${escapeHtml(m.name)}</strong>: ${m.stock} doses remaining (Refill recommended)`).join('<br>');
-          addBotMessage(`<strong>Inventory Stock Alert:</strong><br><br>${lowStr}<br><br><a href="javascript:selectView('Refills')" style="color:var(--teal);text-decoration:underline;">Click here to view Refills &amp; Buy Online</a>.`, true);
+      if (qLower.includes('schedule')) {
+        addBotMessage('📅 Opening full <strong>Medication Schedule</strong> view.', true);
+        selectView('Schedule');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening full Medication Schedule view.' });
+        return;
+      }
+      if (qLower.includes('refill') || qLower.includes('order') || qLower.includes('buy') || qLower.includes('inventory')) {
+        addBotMessage('💊 Opening <strong>Medication Refills &amp; Online Pharmacy</strong>.', true);
+        selectView('Refills');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening Medication Refills & Online Pharmacy.' });
+        return;
+      }
+      if (qLower.includes('pharmacy') || qLower.includes('chemist') || qLower.includes('store')) {
+        addBotMessage('📍 Opening <strong>Nearby Pharmacies &amp; Medical Stores</strong>.', true);
+        selectView('Pharmacy');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening Nearby Pharmacies & Medical Stores.' });
+        return;
+      }
+      if (qLower.includes('setting') || qLower.includes('profile')) {
+        addBotMessage('⚙️ Opening <strong>Settings &amp; Profile Preferences</strong>.', true);
+        selectView('Settings');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening Settings & Profile Preferences.' });
+        return;
+      }
+      if (qLower.includes('history') || qLower.includes('log')) {
+        addBotMessage('📋 Opening <strong>Medication History</strong> records.', true);
+        selectView('History');
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening Medication History records.' });
+        return;
+      }
+      if (qLower.includes('sos') || qLower.includes('emergency') || qLower.includes('panic') || qLower.includes('help')) {
+        addBotMessage('🚨 <strong>Activating Emergency SOS countdown protocol!</strong>', true);
+        if (typeof SOSManager !== 'undefined') SOSManager.openSOS();
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Activating Emergency SOS countdown protocol!' });
+        return;
+      }
+      if (qLower.includes('add') || qLower.includes('new schedule')) {
+        addBotMessage('💊 Opening the <strong>New Medication Schedule</strong> dialog.', true);
+        openScheduleModal();
+        chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: 'Opening the New Medication Schedule dialog.' });
+        return;
+      }
+      if (qLower.includes('taken')) {
+        const meds = getLocalMedications();
+        const pending = meds.find(m => m.status !== 'taken');
+        if (pending) {
+          updateLocalDose(pending.id, 'taken');
+          renderDashboard(getLocalDashboard());
+          addBotMessage(`✅ Marked <strong>${escapeHtml(pending.name)}</strong> as taken for today.`, true);
         } else {
-          addBotMessage(`✅ All your medication stocks are currently sufficient (> 8 doses remaining for all ${meds.length} medicines).`);
+          addBotMessage('All your scheduled doses for today are already marked as taken! 🌟');
         }
+        return;
       }
-      return;
+      if (qLower.includes('theme') || qLower.includes('dark') || qLower.includes('light')) {
+        toggleTheme();
+        addBotMessage('🌓 Theme toggled successfully.');
+        return;
+      }
     }
 
-    if (qLower.includes('adherence') || qLower.includes('compliance rate') || qLower.includes('my score') || qLower.includes('my streak')) {
-      const reportData = getLocalWeeklyReports();
-      const meds = getLocalMedications();
-      const adherence = reportData.adherence !== undefined ? reportData.adherence : (meds.length ? Math.round(meds.reduce((sum, m) => sum + (m.adherence || 95), 0) / meds.length) : 100);
-      const streak = reportData.streak || 1;
-      addBotMessage(`Your real-time 7-day adherence score is <strong>${adherence}%</strong> with an active streak of <strong>${streak} days</strong>! 🔥`, true);
-      return;
-    }
-
-    // ── ROLE 2: Healthcare & Human Body Knowledge Assistant (Gemini API) ──
+    // ── Intelligent Conversational, Clinical, or Contextual Guidance (Gemini AI) ──
     const typingIndicator = showTypingIndicator();
 
     const aiReply = await queryGeminiAI(query);
     if (typingIndicator) typingIndicator.remove();
 
     if (aiReply) {
-      addBotMessage(formatAIResponse(aiReply), true);
+      let formattedHtml = formatAIResponse(aiReply);
+      if (isEmergency) {
+        formattedHtml += `
+          <div class="chat-emergency-banner" style="margin-top:12px;padding:12px 14px;background:rgba(239,68,68,0.12);border:1px solid #ef4444;border-radius:12px;color:#fecaca;">
+            <div style="font-weight:700;color:#ef4444;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+              🚨 <span>Urgent Emergency Care Recommended</span>
+            </div>
+            <p style="font-size:12px;margin:0 0 10px 0;line-height:1.4;">If you are experiencing severe or life-threatening symptoms, please seek emergency medical attention without delay.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <a href="tel:108" style="display:inline-flex;align-items:center;gap:4px;background:#ef4444;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📞 Call 108</a>
+              <button type="button" onclick="if(typeof SOSManager!=='undefined')SOSManager.openSOS()" style="display:inline-flex;align-items:center;gap:4px;background:#991b1b;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;">🚨 Trigger SOS</button>
+            </div>
+          </div>
+        `;
+      }
+      addBotMessage(formattedHtml, true);
+      chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: aiReply });
       return;
     }
 
-    // Smart empathetic local fallback
-    let smartReply = 'I understand your health query. For your current routine, ensure you stay hydrated, maintain balanced nutrition, and keep consistent sleep cycles.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
+    // Smart empathetic local fallback if offline or network unavailable
+    let smartReply = 'I understand your health query. For optimal wellness, ensure you stay hydrated, maintain balanced nutrition, and keep consistent sleep cycles.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
     if (qLower.includes('headache') || qLower.includes('pain') || qLower.includes('fever')) {
       smartReply = 'If you are experiencing mild pain or fever, ensure adequate hydration and rest in a quiet, dark room. If symptoms persist or worsen, please consult a healthcare professional immediately in Counselling Sessions or trigger Emergency SOS.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
     } else if (qLower.includes('anxiety') || qLower.includes('stress') || qLower.includes('sad') || qLower.includes('sleep') || qLower.includes('heart')) {
@@ -4100,6 +4114,8 @@ Keep responses concise (2 to 4 paragraphs maximum), clean, well formatted, and s
       smartReply = 'A balanced diet rich in leafy greens, whole grains, healthy fats, and adequate protein supports optimal cognitive and immune performance. Always take fat-soluble vitamins (like Vitamin D) alongside healthy meals.\n\n⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.';
     }
     addBotMessage(formatAIResponse(smartReply), true);
+    chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: smartReply });
+  }
   }
 
   if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);

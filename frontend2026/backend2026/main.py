@@ -717,8 +717,8 @@ def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gem
             detail="Gemini API Key is not configured. Please add GEMINI_API_KEY to your .env.local file."
         )
 
-    # Preferred models in sequence
-    models_to_try = [model, "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    # Preferred high-performance models in sequence
+    models_to_try = [model, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-1.5-flash"]
     seen = set()
     ordered_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -737,11 +737,11 @@ def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gem
         req = urllib.request.Request(
             url,
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
             method="POST"
         )
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 candidates = result.get("candidates", [])
                 if candidates:
@@ -763,7 +763,9 @@ def call_gemini_api(prompt: str, system_instruction: str = "", model: str = "gem
 
 
 class AIChatRequest(BaseModel):
-    message: str = Field(default="", max_length=2000)
+    message: Optional[str] = Field(default="", max_length=5000)
+    prompt: Optional[str] = Field(default=None, max_length=5000)
+    messages: Optional[list] = None
     context: Optional[str] = None
     history: Optional[list] = None
 
@@ -786,88 +788,106 @@ def get_ai_status() -> dict:
     }
 
 
+CAREWELL_SYSTEM_INSTRUCTION = (
+    "You are CareWell AI, an empathetic, highly intelligent clinical healthcare and wellness assistant for the CareWell platform.\n\n"
+    "YOUR CORE ROLES & CAPABILITIES:\n"
+    "1. Clinical, Biological & Pharmacological Expertise: Explain complex anatomy, cellular biology, diseases, medications, dosages, and interactions in clear, supportive, and accessible language.\n"
+    "2. Patient Medication & Context Awareness: When patient context (active medications, daily schedule, weekly adherence rate, missed doses) is provided, ground your answers directly in their specific health regimen.\n"
+    "3. Platform Navigation Guidance: Guide patients on utilizing CareWell features (Today's Schedule, Medicine Reports, Counselling & Doctor Appointments, Emergency SOS, Nearby Pharmacies).\n"
+    "4. Acute Triage & Emergency Safety: If the patient mentions red-flag symptoms (severe chest pressure/tightness radiating to arm/jaw, sudden shortness of breath, slurred speech, acute facial droop, severe allergic reaction), immediately advise emergency medical assistance (Call 108 / 112) with calm, actionable first-aid steps.\n\n"
+    "COMMUNICATION STYLE:\n"
+    "- Empathetic, warm, encouraging, and scientifically sound.\n"
+    "- Structure answers with clean formatting, bullet points, and concise explanations.\n"
+    "- Always include this polite reminder at the end of clinical guidance:\n"
+    "⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses, prescriptions, or emergencies."
+)
+
+
 @app.post("/api/ai/chat")
+@app.post("/api/chat")
 def ai_chat(payload: AIChatRequest) -> dict:
-    """CareWell AI Health, Medication, and Site Navigation Assistant."""
-    message = (payload.message or "").strip()
-    if not message:
+    """CareWell AI Health, Biology, and Medical Assistant connecting to Google Gemini API."""
+    user_message = (payload.message or payload.prompt or "").strip()
+    if not user_message and payload.messages:
+        last = payload.messages[-1]
+        if isinstance(last, dict):
+            user_message = (last.get("content") or last.get("message") or "").strip()
+
+    if not user_message and not payload.messages:
         raise HTTPException(status_code=400, detail="Empty message")
 
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured on the server")
 
-    system_instruction = (
-        "You are CareWell AI, an empathetic, intelligent dual-role healthcare and wellness companion and site operator for the CareWell platform.\n\n"
-        "Your capabilities consist of TWO core roles:\n\n"
-        "1. WEBSITE SITE OPERATOR & INTENT DETECTOR:\n"
-        "When the user asks to navigate, trigger actions, manage medications, or query site features, respond with actionable guidance:\n"
-        "- Navigating to Counselling Sessions, Reports, Today's Schedule, Refills, Pharmacy, Settings, or History\n"
-        "- Triggering Emergency SOS countdown safety protocol\n"
-        "- Adding a new medication schedule or dosage\n"
-        "- Marking medications as taken\n"
-        "- Checking current schedule, daily progress, pending doses, inventory stock, or weekly adherence rate\n"
-        "- Toggling dark/light mode\n"
-        "Always provide a friendly confirmation (e.g., 'Navigating to Counselling Sessions now...').\n\n"
-        "2. HEALTHCARE & HUMAN BODY KNOWLEDGE ASSISTANT:\n"
-        "When the user asks general questions about health, wellness, nutrition, anatomy, lifestyle, medications, biology, or symptoms:\n"
-        "- Answer clearly, accurately, warmly, and empathetically.\n"
-        "- Provide practical explanations for common symptoms, medical terms, anatomical functions, and healthy routines.\n"
-        "- ALWAYS include this polite disclaimer at the end of health guidance:\n"
-        "'⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies.'\n"
-    )
+    # Construct multi-turn contents if dialogue history is present
+    contents = []
+    msg_list = payload.messages or payload.history
+    if msg_list and isinstance(msg_list, list):
+        for m in msg_list:
+            if isinstance(m, dict):
+                role = "model" if m.get("role") in ("assistant", "model", "bot") else "user"
+                content_text = (m.get("content") or m.get("message") or m.get("text") or "").strip()
+                if content_text:
+                    contents.append({"role": role, "parts": [{"text": content_text}]})
 
-    user_prompt = message
+    if not contents:
+        contents = [{"role": "user", "parts": [{"text": user_message}]}]
+
+    # Prepend patient context to system instruction or user query if provided
+    active_system_instruction = CAREWELL_SYSTEM_INSTRUCTION
     if payload.context:
-        user_prompt = f"Patient context:\n{payload.context}\n\nPatient question: {message}"
+        active_system_instruction = f"{CAREWELL_SYSTEM_INSTRUCTION}\n\nPATIENT LIVE CONTEXT:\n{payload.context}"
 
-    models_to_try = ["gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    # Preferred high-performance models in sequence
+    models_to_try = ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-1.5-flash"]
+    last_error = ""
 
-    if api_key:
-        for model_name in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            body_data = {
-                "systemInstruction": {
-                    "parts": [{"text": system_instruction}]
-                },
-                "contents": [
-                    {"role": "user", "parts": [{"text": user_prompt}]}
-                ],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 1000
-                }
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        body_data = {
+            "systemInstruction": {
+                "parts": [{"text": active_system_instruction}]
+            },
+            "contents": contents,
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 1000
             }
-            try:
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(body_data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=12) as response:
-                    res_json = json.loads(response.read().decode("utf-8"))
-                    text = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                    return {"reply": text, "source": "gemini_api", "model": model_name}
-            except Exception:
-                continue
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(body_data).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                res_json = json.loads(response.read().decode("utf-8"))
+                candidates = res_json.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        ai_text = parts[0].get("text", "")
+                        return {
+                            "reply": ai_text,
+                            "response": ai_text,
+                            "message": ai_text,
+                            "source": "gemini_api",
+                            "model": model_name
+                        }
+        except urllib.error.HTTPError as err:
+            error_body = err.read().decode("utf-8", errors="replace")
+            last_error = f"HTTP {err.code}: {error_body}"
+            continue
+        except Exception as e:
+            last_error = str(e)
+            continue
 
-    # Fallback smart healthcare & operator engine if offline or rate-limited or key missing
-    q_lower = message.lower()
-    if any(w in q_lower for w in ["counsel", "mental health", "therap", "psychiat"]):
-        return {"reply": "🧠 Navigating to Counselling Sessions with certified specialists.", "action": "NAVIGATE", "target": "counselling"}
-    if any(w in q_lower for w in ["report", "adherence", "streak", "progress chart"]):
-        return {"reply": "📊 Opening your Patient Medicine Report and Weekly Adherence Dial.", "action": "NAVIGATE", "target": "reports"}
-    if any(w in q_lower for w in ["sos", "emergency", "ambulance", "help me"]):
-        return {"reply": "🚨 Activating Emergency SOS countdown protocol!", "action": "TRIGGER_SOS"}
-    if any(w in q_lower for w in ["add med", "new med", "add schedule"]):
-        return {"reply": "💊 Opening the New Medication Schedule creator.", "action": "ADD_MEDICINE"}
-
-    return {
-        "reply": (
-            "I am CareWell AI, your health and wellness companion. I can help you manage your daily medications, "
-            "track your progress, book counselling sessions, or answer general health, anatomy, and wellness questions.\n\n"
-            "⚠️ Disclaimer: I provide general health guidance. Please consult a qualified doctor for medical diagnoses or emergencies."
-        ),
-        "source": "fallback"
-    }
+    raise HTTPException(status_code=502, detail=f"Failed to communicate with Gemini API: {last_error}")
 
 
 @app.post("/api/ai/analyze-prescription")

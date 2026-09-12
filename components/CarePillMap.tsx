@@ -287,7 +287,7 @@ export const CarePillMap: React.FC<CarePillMapProps> = ({
           {/* Radius Selector */}
           <select
             value={searchRadius}
-            onChange={(e) => setSearchRadius(Number(e.target.value))}
+            onChange={(e: any) => setSearchRadius(Number(e.target.value))}
             className="text-xs bg-slate-800 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-cyan-500 font-medium"
           >
             <option value={5000}>5 km Radius</option>
@@ -387,7 +387,7 @@ export const CarePillMap: React.FC<CarePillMapProps> = ({
                     href={facility.directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: any) => e.stopPropagation()}
                     className="w-full inline-flex items-center justify-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-500 active:scale-95 text-white py-1.5 rounded-lg shadow-md transition-all"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
