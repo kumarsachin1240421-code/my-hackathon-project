@@ -1,7 +1,19 @@
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 carepill.db
+*.db-wal
+*.db-shm
+
+# Python bytecode and environments
 __pycache__/
+*.py[cod]
+*$py.class
 venv/
+.venv/
+
+# Environment files
 .env
 .env.local
 .env.*
-

@@ -28,6 +28,16 @@ function hideLoader() {
   globalLoader.classList.add('hidden');
 }
 
+// Automatically dismiss global loader when application script initializes
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(hideLoader, 200);
+} else {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(hideLoader, 200));
+  window.addEventListener('load', hideLoader);
+}
+// Absolute failsafe: ensure loader never blocks user interface for more than 1.2s
+setTimeout(hideLoader, 1200);
+
 /* ═══════════════════════════════════════════════
    CarePill — Robust Offline & Live Data Store
    ═══════════════════════════════════════════════ */
@@ -4115,7 +4125,6 @@ COMMUNICATION STYLE:
     }
     addBotMessage(formatAIResponse(smartReply), true);
     chatHistory.push({ role: 'user', content: query }, { role: 'assistant', content: smartReply });
-  }
   }
 
   if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);

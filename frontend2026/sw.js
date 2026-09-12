@@ -1,5 +1,5 @@
 /* CareWell — Progressive Web App Service Worker */
-const CACHE_NAME = 'carewell-cache-v3';
+const CACHE_NAME = 'carewell-cache-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -40,6 +40,13 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
+
+  // Bypass backend /api/ endpoints to prevent caching dynamic data or returning HTML on offline failure
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.pathname.includes('/api/')) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -51,7 +58,14 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./')))
+      .catch(() =>
+        caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('./') || caches.match('./index.html');
+          }
+        })
+      )
   );
 });
 
@@ -60,10 +74,14 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      if (clients.length > 0) {
-        return clients[0].focus();
+      for (const client of clients) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
       }
-      return self.clients.openWindow(self.registration.scope || './');
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(self.registration.scope || './');
+      }
     })
   );
 });

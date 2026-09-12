@@ -6,9 +6,21 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# SQLite WAL and temporary files
+# SQLite Database and temporary files
+*.db
+*.sqlite
+*.sqlite3
+carepill.db
 *.db-wal
 *.db-shm
+
+# Node & Next.js build artifacts
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
 
 # IDE & Editor files
 .vscode/

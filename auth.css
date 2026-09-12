@@ -717,6 +717,7 @@ body.dark-mode .eco-badge-sub {
   border: 1px solid rgba(16, 185, 129, 0.3);
   transform: rotate(3deg);
   pointer-events: none;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   animation: doodleFloat 4s ease-in-out infinite alternate;
 }

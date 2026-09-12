@@ -41,7 +41,7 @@
   <script src="static/sos.js?v=3.0.0" defer></script>
   <script src="static/alarm.js?v=3.0.0" defer></script>
   <script src="static/map.js?v=3.0.0" defer></script>
-  <script src="static/script.js?v=3.0.0" defer></script>
+  <script src="static/script.js?v=3.1.0" defer></script>
 </head>
 <body>
 
@@ -49,7 +49,7 @@
        GLOBAL ORBIT CAPSULE BUFFER (Requirement 4)
        100% Solid #f4f5f6 Opaque Background
        ═══════════════════════════════════════════ -->
-  <div class="global-loader-overlay" id="globalLoader" aria-label="Loading CareWell" role="status" aria-live="polite">
+  <div class="global-loader-overlay hidden" id="globalLoader" style="display: none !important;" aria-label="Loading CareWell" role="status" aria-live="polite">
     <div class="stage">
       <div class="orbit">
         <div class="core"></div>
@@ -58,6 +58,23 @@
       </div>
     </div>
   </div>
+  <script>
+    (function() {
+      function dismissCareWellLoader() {
+        var l = document.getElementById('globalLoader');
+        if (l && !l.classList.contains('hidden')) {
+          l.classList.add('hidden');
+        }
+      }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(dismissCareWellLoader, 150);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(dismissCareWellLoader, 150); });
+        window.addEventListener('load', dismissCareWellLoader);
+      }
+      setTimeout(dismissCareWellLoader, 1200);
+    })();
+  </script>
 
   <!-- ═══════════════════════════════════════════
        CAREWELL LANDING PAGE (Matching Image 1 Reference)

@@ -90,6 +90,7 @@ async function fetchOverpassHospitals(
   const res = await fetch(url, {
     method: 'GET',
     headers: { 'User-Agent': 'CarePill-Triage-Engine/2.0' },
+    signal: AbortSignal.timeout(8000),
     next: { revalidate: 60 },
   });
 
@@ -223,14 +224,14 @@ export async function POST(req: NextRequest) {
     const lat = Number(body.lat);
     const lng = Number(body.lng);
 
-    if (isNaN(lat) || isNaN(lng)) {
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       return NextResponse.json(
-        { error: 'Valid user coordinates (lat, lng) are required.' },
+        { error: 'Valid user coordinates (lat between -90 and 90, lng between -180 and 180) are required.' },
         { status: 400 }
       );
     }
 
-    let radiusMeters = body.radius || 10000;
+    let radiusMeters = Math.min(Math.max(Number(body.radius) || 10000, 500), 50000);
     const maxRadiusKm = radiusMeters / 1000;
     const specialty = body.specialty || '';
     const isEmergency = Boolean(body.isEmergency);
@@ -245,7 +246,7 @@ export async function POST(req: NextRequest) {
       try {
         const keywordQuery = body.keywords?.join(' ') || specialty || 'hospital emergency';
         const googleUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radiusMeters}&type=hospital&keyword=${encodeURIComponent(keywordQuery)}&key=${googleApiKey}`;
-        const googleRes = await fetch(googleUrl);
+        const googleRes = await fetch(googleUrl, { signal: AbortSignal.timeout(8000) });
         if (googleRes.ok) {
           const googleData = await googleRes.json();
           if (googleData.results && googleData.results.length > 0) {
