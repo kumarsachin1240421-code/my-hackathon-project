@@ -20,7 +20,7 @@
   'use strict';
 
   const STORAGE_KEY = 'carewell_background_reminders';
-  const VIBRATION_PATTERN = [300, 100, 300, 100, 500];
+  const VIBRATION_PATTERN = [500, 250, 500, 250, 500, 250, 500];
   let swRegistration = null;
   let activeWorker = null;
   let activeTimers = new Map();
@@ -241,9 +241,12 @@
     });
     saveStoredReminders(updated);
 
-    // 4. Dispatch in-app custom event
+    // 4. Dispatch in-app custom event & trigger loud alarm if window is open
     if (typeof window !== 'undefined') {
       try {
+        if (window.AlarmManager && typeof window.AlarmManager.playLoudAlarm === 'function') {
+          window.AlarmManager.playLoudAlarm(reminder);
+        }
         window.dispatchEvent(new CustomEvent('carewell:reminderAlert', { detail: reminder }));
       } catch {}
     }

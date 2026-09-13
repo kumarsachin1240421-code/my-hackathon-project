@@ -43,6 +43,8 @@
   <script src="static/script.js?v=3.2.0" defer></script>
   <!-- Plug-and-play background reminder notification utility -->
   <script src="src/utils/backgroundNotifier.js" onerror="this.src='static/backgroundNotifier.js'" defer></script>
+  <!-- Draggable & Movable AI Chatbot utility -->
+  <script src="src/utils/useDraggable.js" onerror="this.src='static/useDraggable.js'" defer></script>
 </head>
 <body>
 
@@ -949,6 +951,14 @@
       }
     });
   </script>
+
+  <!-- Preloaded Loud Reminder Alarm Audio Element -->
+  <audio id="carewellAlarmAudio" preload="auto" loop style="display:none;" aria-hidden="true">
+    <source src="alarm.mp3" type="audio/mpeg">
+    <source src="public/alarm.mp3" type="audio/mpeg">
+    <source src="public/alarm.wav" type="audio/wav">
+    <source src="static/alarm.wav" type="audio/wav">
+  </audio>
 </body>
 </html>
 

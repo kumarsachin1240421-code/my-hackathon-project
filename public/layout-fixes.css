@@ -3,3 +3,117 @@
 
 /* Separate the MedAdhere report from the final medicine card. */
 .data-view .medadhere { margin-top: 20px; }
+
+/* ═══════════════════════════════════════════════
+   LOUD MEDICINE REMINDER ALARM BAR & CONTROLS
+   ═══════════════════════════════════════════════ */
+.carewell-loud-alarm-bar {
+  position: fixed;
+  top: -140px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 660px;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: 20px;
+  box-shadow: 0 20px 45px -10px rgba(239, 68, 68, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 99999999;
+  transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+.carewell-loud-alarm-bar.visible {
+  top: 18px;
+  opacity: 1;
+  pointer-events: auto;
+  animation: alarmBarPulse 1.2s infinite ease-in-out;
+}
+@keyframes alarmBarPulse {
+  0%, 100% { box-shadow: 0 14px 35px -8px rgba(239, 68, 68, 0.65); transform: translateX(-50%) scale(1); }
+  50% { box-shadow: 0 22px 55px -4px rgba(239, 68, 68, 0.95); transform: translateX(-50%) scale(1.015); }
+}
+.loud-alarm-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.alarm-pulsing-icon {
+  font-size: 30px;
+  display: inline-block;
+  animation: alarmShake 0.35s infinite alternate ease-in-out;
+}
+@keyframes alarmShake {
+  from { transform: rotate(-12deg) scale(1); }
+  to { transform: rotate(12deg) scale(1.2); }
+}
+.loud-alarm-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.loud-alarm-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+.btn-stop-loud-alarm {
+  background: #ffffff;
+  color: #dc2626;
+  border: none;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.btn-stop-loud-alarm:hover {
+  background: #fef2f2;
+  transform: scale(1.05);
+}
+.btn-stop-loud-alarm:active {
+  transform: scale(0.95);
+}
+
+/* ═══════════════════════════════════════════════
+   DRAGGABLE & MOVABLE AI CHATBOT CONTROLS
+   ═══════════════════════════════════════════════ */
+.bot-character-wrap,
+.chat-drawer-header,
+.chat-header {
+  cursor: grab !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.bot-character-wrap:active,
+.chat-drawer-header:active,
+.chat-header:active,
+.bot-character-wrap.is-dragging,
+.chat-drawer-header.is-dragging,
+.chat-header.is-dragging,
+body.chatbot-is-dragging {
+  cursor: grabbing !important;
+}
+.chat-drawer-header button,
+.chat-drawer-header input,
+.chat-drawer-header [role="button"],
+.chat-header button {
+  cursor: pointer !important;
+  user-select: auto !important;
+}

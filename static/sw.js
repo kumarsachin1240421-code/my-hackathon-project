@@ -1,5 +1,5 @@
-/* CareWell — Progressive Web App Service Worker with Background Reminders */
-const CACHE_NAME = 'carewell-cache-v6';
+/* CareWell — Progressive Web App Service Worker with Background Reminders & Loud Alarm */
+const CACHE_NAME = 'carewell-cache-v7';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,9 @@ const STATIC_ASSETS = [
   './carewell-icon-512.png',
   './favicon.png',
   './favicon.ico',
-  './brand-banner.png'
+  './brand-banner.png',
+  './alarm.mp3',
+  './alarm.wav'
 ];
 
 /* Install Event — Cache static assets & skip waiting */
@@ -74,7 +76,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-/* ── Push Event Listener (Requirement 1) ── */
+/* ── Push Event Listener with Loud Alarm Vibration Pattern ── */
 self.addEventListener('push', (event) => {
   let payload = {
     title: '⏰ Medicine Reminder',
@@ -98,16 +100,16 @@ self.addEventListener('push', (event) => {
     body: message,
     icon: payload.icon || './carewell-icon-192.png',
     badge: payload.badge || './carewell-icon-192.png',
-    vibrate: [300, 100, 300, 100, 500],
+    vibrate: [500, 250, 500, 250, 500, 250, 500],
     requireInteraction: true,
     tag: payload.tag || `carewell-push-${Date.now()}`,
-    data: payload.data || { url: self.registration.scope || './' }
+    data: payload.data || { url: self.registration.scope || './', playAlarm: true }
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-/* ── Message / Background Reminder Event Listener (Requirement 1 & 2) ── */
+/* ── Message / Background Reminder Event Listener ── */
 self.addEventListener('message', (event) => {
   if (!event.data) return;
 
@@ -120,10 +122,10 @@ self.addEventListener('message', (event) => {
       body: notifBody,
       icon: icon || './carewell-icon-192.png',
       badge: './carewell-icon-192.png',
-      vibrate: [300, 100, 300, 100, 500],
+      vibrate: [500, 250, 500, 250, 500, 250, 500],
       requireInteraction: true,
       tag: tag || `carewell-reminder-${Date.now()}`,
-      data: data || { url: self.registration.scope || './' }
+      data: data || { url: self.registration.scope || './', playAlarm: true }
     };
 
     event.waitUntil(self.registration.showNotification(notifTitle, options));
@@ -132,20 +134,28 @@ self.addEventListener('message', (event) => {
   }
 });
 
-/* ── Notification Click Handler (Requirement 1) ── */
+/* ── Notification Click Handler — Focus or Open Window and Trigger Loud Alarm ── */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || self.registration.scope || './';
+  const rawUrl = (event.notification.data && event.notification.data.url) || self.registration.scope || './';
+  const targetUrl = rawUrl.includes('?') ? `${rawUrl}&alarm=true` : `${rawUrl}?alarm=true`;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Focus an existing CareWell window if open
+      // Focus an existing CareWell window if open and notify it to play loud alarm
       for (const client of clients) {
         if (client.url && 'focus' in client) {
+          try {
+            client.postMessage({
+              type: 'PLAY_LOUD_ALARM',
+              reminder: event.notification.data,
+              title: event.notification.title
+            });
+          } catch {}
           return client.focus();
         }
       }
-      // Otherwise open a new window to the web app
+      // Otherwise open a new window with alarm=true query param
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl);
       }
