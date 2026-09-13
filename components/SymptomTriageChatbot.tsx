@@ -36,6 +36,97 @@ export const SymptomTriageChatbot: React.FC<SymptomTriageChatbotProps> = ({
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // High-performance 60 FPS Pointer Capture dragging refs
+  const chatbotRef = useRef<HTMLDivElement>(null);
+  const pos = useRef<{ x: number; y: number }>({ x: 20, y: 100 });
+  const startPointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const rafId = useRef<number | null>(null);
+
+  // Initialize saved coords & hardware-accelerated styles on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('chatbot_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          pos.current = { x: parsed.x, y: parsed.y };
+        }
+      }
+    } catch (_) {}
+
+    if (chatbotRef.current) {
+      chatbotRef.current.style.position = 'fixed';
+      chatbotRef.current.style.top = '0px';
+      chatbotRef.current.style.left = '0px';
+      chatbotRef.current.style.zIndex = '9999';
+      chatbotRef.current.style.willChange = 'transform';
+      chatbotRef.current.style.touchAction = 'none';
+      const currentPos = pos.current || { x: 20, y: 100 };
+      chatbotRef.current.style.transform = `translate3d(${currentPos.x}px, ${currentPos.y}px, 0)`;
+    }
+
+    return () => {
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
+    };
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button, input, textarea, a')) return;
+    isDragging.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    startPointer.current = { x: e.clientX, y: e.clientY };
+    startPos.current = {
+      x: pos.current?.x ?? 20,
+      y: pos.current?.y ?? 100,
+    };
+    if (chatbotRef.current) {
+      chatbotRef.current.style.transition = 'none';
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !chatbotRef.current) return;
+    const startX = startPos.current?.x ?? 20;
+    const startY = startPos.current?.y ?? 100;
+    const startPointerX = startPointer.current?.x ?? e.clientX;
+    const startPointerY = startPointer.current?.y ?? e.clientY;
+    const dx = e.clientX - startPointerX;
+    const dy = e.clientY - startPointerY;
+    const newX = Math.min(
+      Math.max(10, startX + dx),
+      window.innerWidth - (chatbotRef.current.offsetWidth || 340) - 10
+    );
+    const newY = Math.min(
+      Math.max(10, startY + dy),
+      window.innerHeight - (chatbotRef.current.offsetHeight || 480) - 10
+    );
+    pos.current = { x: newX, y: newY };
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(() => {
+      if (chatbotRef.current) {
+        chatbotRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
+      }
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    try {
+      if (pos.current) {
+        localStorage.setItem('chatbot_pos', JSON.stringify(pos.current));
+      }
+    } catch (_) {}
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
@@ -127,10 +218,27 @@ export const SymptomTriageChatbot: React.FC<SymptomTriageChatbotProps> = ({
 
   return (
     <div
-      className={`flex flex-col h-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md text-slate-100 ${className}`}
+      ref={chatbotRef}
+      style={{
+        width: 'min(440px, calc(100vw - 20px))',
+        height: 'min(640px, calc(100vh - 40px))',
+      }}
+      className={`flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md text-slate-100 z-50 ${className}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-slate-950/80 border-b border-slate-800">
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          cursor: 'grab',
+        }}
+        className="flex items-center justify-between px-5 py-4 bg-slate-950/80 border-b border-slate-800 cursor-grab active:cursor-grabbing select-none"
+      >
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
