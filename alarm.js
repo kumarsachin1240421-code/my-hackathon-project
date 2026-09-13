@@ -196,10 +196,19 @@ const AlarmManager = (() => {
   /* ── Preview Tone (Plays 1-2 sequence cycles) ── */
   function previewTone(toneKey) {
     stopAlarm();
-    playTone(toneKey, false);
-    setTimeout(() => {
-      stopAlarm();
-    }, 2800);
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.playSelectedRingtone === 'function') {
+      window.AudioPlayer.playSelectedRingtone(toneKey);
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.AudioPlayer) {
+          window.AudioPlayer.stopSelectedRingtone();
+        }
+      }, 2600);
+    } else {
+      playTone(toneKey, false);
+      setTimeout(() => {
+        stopAlarm();
+      }, 2600);
+    }
   }
 
   /* ── Stop Current Alarm / Silence ── */
@@ -216,6 +225,11 @@ const AlarmManager = (() => {
       try { o.stop(); } catch {}
     });
     activeOscillators = [];
+
+    // Stop AudioPlayer engine
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.stopSelectedRingtone === 'function') {
+      try { window.AudioPlayer.stopSelectedRingtone(); } catch {}
+    }
 
     // Stop HTML5 audio player
     const audioEl = document.getElementById('carewellAlarmAudio');
@@ -344,25 +358,29 @@ const AlarmManager = (() => {
     }
   }
 
-  /* ── Play Loud Repeating Buzzer Alarm Loop (Requirement 1) ── */
+  /* ── Play Loud Repeating Buzzer / Selected Ringtone Alarm Loop ── */
   function playLoudAlarm(medication = {}) {
     ensureAudioContext();
 
-    // 1. Play HTML5 Audio
-    playAudioElement();
+    const selectedTone = (medication && (medication.ringtone || medication.tone)) || getSelectedTone() || 'buzzer';
 
-    // 2. Play high-penetration Web Audio buzzer tone (loops continuously)
-    playTone('buzzer', true);
+    // 1. Play user-selected ringtone through resilient AudioPlayer engine
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.playSelectedRingtone === 'function') {
+      window.AudioPlayer.playSelectedRingtone(selectedTone);
+    } else {
+      playAudioElement();
+      playTone(selectedTone, true);
+    }
 
-    // 3. Service Worker / Mobile vibration pattern [500, 250, 500, 250, 500, 250, 500]
+    // 2. Service Worker / Mobile vibration pattern [500, 250, 500, 250, 500, 250, 500]
     if ('vibrate' in navigator) {
       try { navigator.vibrate([500, 250, 500, 250, 500, 250, 500]); } catch {}
     }
 
-    // 4. Show top loud alarm bar with prominent Stop Alarm button
+    // 3. Show top loud alarm bar with prominent Stop Alarm button
     showLoudAlarmBar(medication);
 
-    // 5. Show in-app actionable popup
+    // 4. Show in-app actionable popup
     showActionableAlarmPopup(medication);
   }
 

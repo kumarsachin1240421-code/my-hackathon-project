@@ -1,12 +1,19 @@
 /**
- * CareWell — Draggable & Movable AI Chatbot Utility & Hook
+ * CareWell — Robust Multi-Drag Movable AI Chatbot Utility & Hook
  * 
- * Requirements:
- * - Supports Mouse events (mousedown, mousemove, mouseup) and Touch events (touchstart, touchmove, touchend).
- * - Allows click & drag or touch & drag on chatbot bubble / header anywhere on screen.
- * - Viewport boundary clamping so chatbot stays fully on-screen.
- * - cursor: grab and cursor: grabbing with touch-action: none to prevent mobile screen scroll conflicts.
- * - Saves last position in localStorage to persist across reloads.
+ * Module 2 Requirements:
+ * - State Handling: Keeps track of coordinates { x, y } and boolean isDragging.
+ * - Pointer / Drag Event Lifecycle:
+ *   * When drag starts (mousedown or touchstart on chatbot bubble/header):
+ *     Calculate pointer offset relative to chatbot element bounds. Set isDragging = true.
+ *   * Global Tracking: Bind mousemove and touchmove directly to window.
+ *   * Coordinate Clamping: Keep widget within viewport bounds:
+ *     clamp(10, newX, window.innerWidth - chatbotWidth - 10)
+ *     clamp(10, newY, window.innerHeight - chatbotHeight - 10).
+ *   * Cleanup: Bind mouseup and touchend to window. Reset isDragging = false completely
+ *     so subsequent drags trigger cleanly without state lockup.
+ *   * CSS on drag handle: touch-action: none !important; user-select: none !important;
+ *   * Position Retention: Store final { x, y } coordinates in localStorage.
  */
 
 (function (root, factory) {
@@ -23,29 +30,17 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const DEFAULT_STORAGE_KEY = 'carewell_chatbot_position_v1';
+  const DEFAULT_STORAGE_KEY = 'carewell_chatbot_pos_v2';
 
   /**
-   * Clamps x and y within the current viewport boundaries
+   * Clamp helper: clamp(min, val, max)
    */
-  function clampToViewport(x, y, elementWidth, elementHeight) {
-    const winWidth = window.innerWidth || document.documentElement.clientWidth || 360;
-    const winHeight = window.innerHeight || document.documentElement.clientHeight || 640;
-
-    const w = elementWidth || 80;
-    const h = elementHeight || 80;
-
-    const maxX = Math.max(0, winWidth - w);
-    const maxY = Math.max(0, winHeight - h);
-
-    const clampedX = Math.max(8, Math.min(x, maxX - 8));
-    const clampedY = Math.max(8, Math.min(y, maxY - 8));
-
-    return { x: clampedX, y: clampedY };
+  function clamp(min, val, max) {
+    return Math.max(min, Math.min(val, Math.max(min, max)));
   }
 
   /**
-   * Make a DOM element draggable by one or more handle elements
+   * Make any DOM element continuously draggable without freezing
    */
   function makeDraggable(element, handle, options = {}) {
     if (!element) return null;
@@ -53,20 +48,21 @@
     const storageKey = options.storageKey || DEFAULT_STORAGE_KEY;
     const handles = Array.isArray(handle) ? handle.filter(Boolean) : [handle || element];
 
+    // State Handling
     let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let initialElemLeft = 0;
-    let initialElemTop = 0;
+    let offsetX = 0;
+    let offsetY = 0;
+    let currentX = 0;
+    let currentY = 0;
     let hasMoved = false;
 
-    // Apply grab styling to handles
+    // Apply strict CSS requirements on drag handles
     handles.forEach((h) => {
       if (!h) return;
-      h.style.setProperty('cursor', 'grab', 'important');
       h.style.setProperty('touch-action', 'none', 'important');
       h.style.setProperty('user-select', 'none', 'important');
       h.style.setProperty('-webkit-user-select', 'none', 'important');
+      h.style.setProperty('cursor', 'grab', 'important');
     });
 
     /**
@@ -79,19 +75,22 @@
           const pos = JSON.parse(saved);
           if (typeof pos.x === 'number' && typeof pos.y === 'number') {
             const rect = element.getBoundingClientRect();
-            const clamped = clampToViewport(pos.x, pos.y, rect.width, rect.height);
-            applyPosition(clamped.x, clamped.y);
+            const w = rect.width || 80;
+            const h = rect.height || 80;
+            const clampedX = clamp(10, pos.x, window.innerWidth - w - 10);
+            const clampedY = clamp(10, pos.y, window.innerHeight - h - 10);
+            applyPosition(clampedX, clampedY);
           }
         }
-      } catch (err) {
-        console.warn('[useDraggable] Position restore warning:', err);
-      }
+      } catch {}
     }
 
     /**
-     * Apply position in fixed coordinates
+     * Apply coordinates { x, y } in fixed screen space
      */
     function applyPosition(x, y) {
+      currentX = x;
+      currentY = y;
       element.style.setProperty('position', 'fixed', 'important');
       element.style.setProperty('left', `${Math.round(x)}px`, 'important');
       element.style.setProperty('top', `${Math.round(y)}px`, 'important');
@@ -101,7 +100,7 @@
     }
 
     /**
-     * Save position to localStorage
+     * Store final { x, y } in localStorage
      */
     function savePosition(x, y) {
       try {
@@ -110,7 +109,7 @@
     }
 
     /**
-     * Extract clientX and clientY from Mouse or Touch event
+     * Extract clientX / clientY from pointer event
      */
     function getPointerPos(e) {
       if (e.touches && e.touches.length > 0) {
@@ -123,48 +122,17 @@
     }
 
     /**
-     * Drag Start Handler
-     */
-    function onPointerStart(e) {
-      // Don't drag if clicking interactive controls (buttons, inputs, links)
-      if (e.target && e.target.closest && e.target.closest('button, input, textarea, a, select, [role="button"]:not(.bot-character-wrap)')) {
-        return;
-      }
-
-      const pos = getPointerPos(e);
-      startX = pos.x;
-      startY = pos.y;
-
-      const rect = element.getBoundingClientRect();
-      initialElemLeft = rect.left;
-      initialElemTop = rect.top;
-      hasMoved = false;
-      isDragging = true;
-
-      handles.forEach((h) => h && h.style.setProperty('cursor', 'grabbing', 'important'));
-      document.body.style.setProperty('user-select', 'none', 'important');
-
-      window.addEventListener('mousemove', onPointerMove, { passive: false });
-      window.addEventListener('mouseup', onPointerEnd, { once: true });
-      window.addEventListener('touchmove', onPointerMove, { passive: false });
-      window.addEventListener('touchend', onPointerEnd, { once: true });
-      window.addEventListener('touchcancel', onPointerEnd, { once: true });
-
-      if (options.onDragStart) options.onDragStart({ x: initialElemLeft, y: initialElemTop });
-    }
-
-    /**
-     * Drag Move Handler
+     * Global window mousemove / touchmove handler
      */
     function onPointerMove(e) {
       if (!isDragging) return;
 
       const pos = getPointerPos(e);
-      const deltaX = pos.x - startX;
-      const deltaY = pos.y - startY;
+      const newX = pos.x - offsetX;
+      const newY = pos.y - offsetY;
 
-      // Small threshold (5px) to differentiate click from drag
-      if (!hasMoved && Math.hypot(deltaX, deltaY) > 5) {
+      // Small movement threshold to distinguish intentional drag from a stationary click
+      if (!hasMoved && Math.hypot(newX - currentX, newY - currentY) > 4) {
         hasMoved = true;
       }
 
@@ -172,64 +140,110 @@
         if (e.cancelable) e.preventDefault();
 
         const rect = element.getBoundingClientRect();
-        const rawX = initialElemLeft + deltaX;
-        const rawY = initialElemTop + deltaY;
+        const chatbotWidth = rect.width || 80;
+        const chatbotHeight = rect.height || 80;
 
-        const clamped = clampToViewport(rawX, rawY, rect.width, rect.height);
-        applyPosition(clamped.x, clamped.y);
+        // Coordinate Clamping strictly within viewport boundaries:
+        // clamp(10, newX, window.innerWidth - chatbotWidth - 10)
+        // clamp(10, newY, window.innerHeight - chatbotHeight - 10)
+        const clampedX = clamp(10, newX, window.innerWidth - chatbotWidth - 10);
+        const clampedY = clamp(10, newY, window.innerHeight - chatbotHeight - 10);
 
-        if (options.onDrag) options.onDrag({ x: clamped.x, y: clamped.y });
+        applyPosition(clampedX, clampedY);
       }
     }
 
     /**
-     * Drag End Handler
+     * Global window mouseup / touchend / touchcancel cleanup handler
      */
     function onPointerEnd(e) {
       if (!isDragging) return;
+
+      // Complete reset so subsequent drags trigger cleanly without state lockup
       isDragging = false;
 
-      handles.forEach((h) => h && h.style.setProperty('cursor', 'grab', 'important'));
-      document.body.style.removeProperty('user-select');
-
+      // Clean up global window listeners
       window.removeEventListener('mousemove', onPointerMove);
       window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerEnd);
+      window.removeEventListener('touchend', onPointerEnd);
+      window.removeEventListener('touchcancel', onPointerEnd);
+
+      // Restore cursor & body styles
+      handles.forEach((h) => {
+        if (h) h.style.setProperty('cursor', 'grab', 'important');
+      });
+      document.body.style.removeProperty('user-select');
 
       if (hasMoved) {
-        const rect = element.getBoundingClientRect();
-        const clamped = clampToViewport(rect.left, rect.top, rect.width, rect.height);
-        savePosition(clamped.x, clamped.y);
+        savePosition(currentX, currentY);
 
-        // Prevent ghost clicks if user dragged
-        const preventGhostClick = (clickEvent) => {
-          clickEvent.stopPropagation();
-          clickEvent.preventDefault();
+        // Prevent accidental click triggering on release after dragging
+        const preventClick = (clickEvt) => {
+          clickEvt.stopPropagation();
+          clickEvt.preventDefault();
         };
-        window.addEventListener('click', preventGhostClick, { capture: true, once: true });
-        setTimeout(() => window.removeEventListener('click', preventGhostClick, { capture: true }), 100);
-
-        if (options.onDragEnd) options.onDragEnd({ x: clamped.x, y: clamped.y });
+        window.addEventListener('click', preventClick, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener('click', preventClick, { capture: true }), 100);
       }
     }
 
-    // Attach start listeners to each handle
+    /**
+     * Drag Start Handler (bound to handle elements)
+     */
+    function onPointerStart(e) {
+      // Don't drag if user is clicking interactive controls (buttons, inputs, close buttons)
+      if (e.target && e.target.closest && e.target.closest('button, input, textarea, a, select, [role="button"]:not(.bot-character-wrap)')) {
+        return;
+      }
+
+      const pos = getPointerPos(e);
+      const rect = element.getBoundingClientRect();
+
+      // Calculate pointer offset relative to chatbot element bounds
+      offsetX = pos.x - rect.left;
+      offsetY = pos.y - rect.top;
+      currentX = rect.left;
+      currentY = rect.top;
+      hasMoved = false;
+
+      // Set isDragging = true
+      isDragging = true;
+
+      handles.forEach((h) => {
+        if (h) h.style.setProperty('cursor', 'grabbing', 'important');
+      });
+      document.body.style.setProperty('user-select', 'none', 'important');
+
+      // Bind mousemove and touchmove directly to window for global multi-drag tracking
+      window.addEventListener('mousemove', onPointerMove, { passive: false });
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('mouseup', onPointerEnd, { once: true });
+      window.addEventListener('touchend', onPointerEnd, { once: true });
+      window.addEventListener('touchcancel', onPointerEnd, { once: true });
+    }
+
+    // Attach start listeners to handles
     handles.forEach((h) => {
       if (!h) return;
       h.addEventListener('mousedown', onPointerStart);
       h.addEventListener('touchstart', onPointerStart, { passive: false });
     });
 
-    // Handle window resize to keep element inside viewport
+    // Window resize handler ensures widget stays within clamped boundaries
     window.addEventListener('resize', () => {
       const rect = element.getBoundingClientRect();
-      const clamped = clampToViewport(rect.left, rect.top, rect.width, rect.height);
-      if (clamped.x !== rect.left || clamped.y !== rect.top) {
-        applyPosition(clamped.x, clamped.y);
-        savePosition(clamped.x, clamped.y);
+      const w = rect.width || 80;
+      const h = rect.height || 80;
+      const clampedX = clamp(10, rect.left, window.innerWidth - w - 10);
+      const clampedY = clamp(10, rect.top, window.innerHeight - h - 10);
+      if (clampedX !== rect.left || clampedY !== rect.top) {
+        applyPosition(clampedX, clampedY);
+        savePosition(clampedX, clampedY);
       }
     });
 
-    // Restore saved position on initialization
+    // Restore position initially
     restorePosition();
 
     return {
@@ -246,44 +260,48 @@
   }
 
   /**
-   * Automatically initializes dragging on the CareWell Bot Container and Chat Drawer
+   * Automatic initializer for CareWell floating chatbot and standalone chat
    */
   function initDraggableChatbot() {
     if (typeof document === 'undefined') return;
 
-    // 1. CareWell Floating Bot Container in main index.html
+    // 1. CareWell Floating Bot Container & Avatar
     const botContainer = document.getElementById('carewellBotContainer');
     const botAvatar = document.getElementById('botCharacterAvatar');
+    const botBubble = document.getElementById('botSpeechBubble');
     const drawerHeader = document.querySelector('.chat-drawer-header');
 
     if (botContainer) {
-      const handles = [botAvatar, drawerHeader].filter(Boolean);
+      const handles = [botAvatar, botBubble, drawerHeader].filter(Boolean);
       makeDraggable(botContainer, handles, {
-        storageKey: 'carewell_floating_bot_pos'
+        storageKey: 'carewell_floating_bot_coords'
       });
-      console.log('[useDraggable] CareWell AI Chatbot draggable attached successfully.');
+      console.log('[useDraggable] Continuous multi-drag initialized on CareWell AI chatbot.');
     }
 
-    // 2. Standalone Chatbot container (chatbot.html)
+    // 2. Standalone Chatbot Container (chatbot.html)
     const standaloneChat = document.querySelector('.chat-container');
     const standaloneHeader = document.querySelector('.chat-header');
     if (standaloneChat && standaloneHeader) {
       makeDraggable(standaloneChat, standaloneHeader, {
-        storageKey: 'carewell_standalone_chat_pos'
+        storageKey: 'carewell_standalone_chat_coords'
       });
     }
 
-    // 3. Keep draggable position synchronized when bot authentication state changes
+    // 3. Keep position locked when bot visibility changes
     const observer = new MutationObserver(() => {
-      const saved = localStorage.getItem('carewell_floating_bot_pos');
+      const saved = localStorage.getItem('carewell_floating_bot_coords');
       if (saved && botContainer && botContainer.style.display !== 'none') {
         try {
           const pos = JSON.parse(saved);
           if (typeof pos.x === 'number' && typeof pos.y === 'number') {
             const rect = botContainer.getBoundingClientRect();
-            const clamped = clampToViewport(pos.x, pos.y, rect.width, rect.height);
-            botContainer.style.setProperty('left', `${clamped.x}px`, 'important');
-            botContainer.style.setProperty('top', `${clamped.y}px`, 'important');
+            const w = rect.width || 80;
+            const h = rect.height || 80;
+            const clampedX = clamp(10, pos.x, window.innerWidth - w - 10);
+            const clampedY = clamp(10, pos.y, window.innerHeight - h - 10);
+            botContainer.style.setProperty('left', `${clampedX}px`, 'important');
+            botContainer.style.setProperty('top', `${clampedY}px`, 'important');
             botContainer.style.setProperty('right', 'auto', 'important');
             botContainer.style.setProperty('bottom', 'auto', 'important');
           }
@@ -297,7 +315,7 @@
   }
 
   /**
-   * React Hook Wrapper for Next.js / React components
+   * React Hook Wrapper
    */
   function useDraggable(elementRef, handleRef, options = {}) {
     if (typeof window === 'undefined') return;
@@ -313,12 +331,12 @@
     }, [elementRef, handleRef]);
   }
 
-  // Auto-init on DOMContentLoaded in browser environments
+  // Self-init on DOM readiness
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initDraggableChatbot);
     } else {
-      setTimeout(initDraggableChatbot, 60);
+      setTimeout(initDraggableChatbot, 50);
     }
   }
 
@@ -326,6 +344,6 @@
     makeDraggable,
     useDraggable,
     initDraggableChatbot,
-    clampToViewport
+    clamp
   };
 });

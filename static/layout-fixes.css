@@ -94,6 +94,7 @@
    DRAGGABLE & MOVABLE AI CHATBOT CONTROLS
    ═══════════════════════════════════════════════ */
 .bot-character-wrap,
+.bot-speech-bubble,
 .chat-drawer-header,
 .chat-header {
   cursor: grab !important;
@@ -102,9 +103,11 @@
   -webkit-user-select: none !important;
 }
 .bot-character-wrap:active,
+.bot-speech-bubble:active,
 .chat-drawer-header:active,
 .chat-header:active,
 .bot-character-wrap.is-dragging,
+.bot-speech-bubble.is-dragging,
 .chat-drawer-header.is-dragging,
 .chat-header.is-dragging,
 body.chatbot-is-dragging {

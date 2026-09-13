@@ -90,6 +90,21 @@ const AlarmManager = (() => {
         { freq: 987.77, dur: 0.2 },
         { freq: 0, dur: 0.3 }
       ]
+    },
+    buzzer: {
+      name: 'Loud Alarm Buzzer',
+      icon: '⚡',
+      desc: 'Ultra-loud repeating digital buzzer alarm for time-critical medication',
+      type: 'sawtooth',
+      tempo: 150,
+      notes: [
+        { freq: 880.00, dur: 0.16 },
+        { freq: 0, dur: 0.06 },
+        { freq: 987.77, dur: 0.16 },
+        { freq: 0, dur: 0.06 },
+        { freq: 880.00, dur: 0.20 },
+        { freq: 0, dur: 0.35 }
+      ]
     }
   };
 
@@ -181,13 +196,22 @@ const AlarmManager = (() => {
   /* ── Preview Tone (Plays 1-2 sequence cycles) ── */
   function previewTone(toneKey) {
     stopAlarm();
-    playTone(toneKey, false);
-    setTimeout(() => {
-      stopAlarm();
-    }, 2800);
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.playSelectedRingtone === 'function') {
+      window.AudioPlayer.playSelectedRingtone(toneKey);
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.AudioPlayer) {
+          window.AudioPlayer.stopSelectedRingtone();
+        }
+      }, 2600);
+    } else {
+      playTone(toneKey, false);
+      setTimeout(() => {
+        stopAlarm();
+      }, 2600);
+    }
   }
 
-  /* ── Stop Current Alarm / Preview ── */
+  /* ── Stop Current Alarm / Silence ── */
   function stopAlarm() {
     if (activeAlarmLoop) {
       clearInterval(activeAlarmLoop);
@@ -201,6 +225,97 @@ const AlarmManager = (() => {
       try { o.stop(); } catch {}
     });
     activeOscillators = [];
+
+    // Stop AudioPlayer engine
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.stopSelectedRingtone === 'function') {
+      try { window.AudioPlayer.stopSelectedRingtone(); } catch {}
+    }
+
+    // Stop HTML5 audio player
+    const audioEl = document.getElementById('carewellAlarmAudio');
+    if (audioEl) {
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+      } catch {}
+    }
+
+    // Cancel vibration pattern
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(0); } catch {}
+    }
+
+    // Hide top loud alarm bar
+    hideLoudAlarmBar();
+  }
+
+  /* ── Floating Loud Alarm Top Bar ── */
+  function showLoudAlarmBar(medication = {}) {
+    let bar = document.getElementById('carewellLoudAlarmBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'carewellLoudAlarmBar';
+      bar.className = 'carewell-loud-alarm-bar';
+      bar.innerHTML = `
+        <div class="loud-alarm-content">
+          <span class="alarm-pulsing-icon">⏰</span>
+          <div>
+            <strong class="loud-alarm-title">Medicine Reminder Alarm is Ringing</strong>
+            <p class="loud-alarm-sub" id="loudAlarmSubText"></p>
+          </div>
+        </div>
+        <div class="loud-alarm-actions">
+          <button type="button" class="btn-stop-loud-alarm" id="stopLoudAlarmBtn" aria-label="Stop Alarm">
+            <span class="material-symbols-outlined" style="font-size:18px;">volume_off</span>
+            <span>Stop Alarm</span>
+          </button>
+        </div>
+      `;
+      document.body.appendChild(bar);
+      const stopBtn = bar.querySelector('#stopLoudAlarmBtn');
+      if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+          stopAlarm();
+        });
+      }
+    }
+    const subText = bar.querySelector('#loudAlarmSubText');
+    if (subText) {
+      subText.textContent = `${medication.name || 'Medicine'} · ${medication.dosage || 'Take as scheduled'}`;
+    }
+    bar.classList.add('visible');
+  }
+
+  function hideLoudAlarmBar() {
+    const bar = document.getElementById('carewellLoudAlarmBar');
+    if (bar) {
+      bar.classList.remove('visible');
+    }
+  }
+
+  /* ── Prime and Play HTML5 Audio Player ── */
+  function playAudioElement() {
+    let audioEl = document.getElementById('carewellAlarmAudio');
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.id = 'carewellAlarmAudio';
+      audioEl.preload = 'auto';
+      audioEl.loop = true;
+      audioEl.innerHTML = `
+        <source src="alarm.mp3" type="audio/mpeg">
+        <source src="public/alarm.mp3" type="audio/mpeg">
+        <source src="public/alarm.wav" type="audio/wav">
+        <source src="static/alarm.wav" type="audio/wav">
+      `;
+      document.body.appendChild(audioEl);
+    }
+    try {
+      audioEl.volume = 1.0;
+      const playPromise = audioEl.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
+    } catch {}
   }
 
   /* ── Native Notification & Background Trigger ── */
@@ -224,7 +339,8 @@ const AlarmManager = (() => {
           badge: '/static/hero-care.jpg',
           tag: `carewell-med-${medication.id}`,
           requireInteraction: true,
-          vibrate: [300, 150, 300, 150, 400],
+          vibrate: [500, 250, 500, 250, 500, 250, 500],
+          data: { url: './?alarm=true', playAlarm: true, reminder: medication },
           actions: [
             { action: 'taken', title: 'Taken' },
             { action: 'snooze', title: 'Snooze 10m' }
@@ -233,6 +349,7 @@ const AlarmManager = (() => {
 
         notif.onclick = () => {
           window.focus();
+          playLoudAlarm(medication);
           notif.close();
         };
 
@@ -241,21 +358,36 @@ const AlarmManager = (() => {
     }
   }
 
-  /* ── Trigger Full Alarm & Actionable Pop-up ── */
-  function triggerAlarm(medication) {
+  /* ── Play Loud Repeating Buzzer / Selected Ringtone Alarm Loop ── */
+  function playLoudAlarm(medication = {}) {
     ensureAudioContext();
-    playTone(getSelectedTone(), true);
 
-    // Vibration on mobile
-    if ('vibrate' in navigator) {
-      try { navigator.vibrate([400, 200, 400, 200, 600]); } catch {}
+    const selectedTone = (medication && (medication.ringtone || medication.tone)) || getSelectedTone() || 'buzzer';
+
+    // 1. Play user-selected ringtone through resilient AudioPlayer engine
+    if (typeof window !== 'undefined' && window.AudioPlayer && typeof window.AudioPlayer.playSelectedRingtone === 'function') {
+      window.AudioPlayer.playSelectedRingtone(selectedTone);
+    } else {
+      playAudioElement();
+      playTone(selectedTone, true);
     }
 
-    // Trigger Desktop / Background Notification
-    triggerBackgroundNotification(medication);
+    // 2. Service Worker / Mobile vibration pattern [500, 250, 500, 250, 500, 250, 500]
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([500, 250, 500, 250, 500, 250, 500]); } catch {}
+    }
 
-    // Show In-App Actionable Alarm Pop-up Modal (Requirement 2)
+    // 3. Show top loud alarm bar with prominent Stop Alarm button
+    showLoudAlarmBar(medication);
+
+    // 4. Show in-app actionable popup
     showActionableAlarmPopup(medication);
+  }
+
+  /* ── Trigger Full Alarm & Actionable Pop-up ── */
+  function triggerAlarm(medication) {
+    playLoudAlarm(medication);
+    triggerBackgroundNotification(medication);
   }
 
   /* ── Actionable In-App Pop-Up Modal / Floating Notification (Requirement 3) ── */
@@ -612,14 +744,63 @@ const AlarmManager = (() => {
     requestNotificationPermission();
     startChecking();
 
-    // User gesture unlock for Web Audio
+    // User gesture unlock for Web Audio & Audio player on first click/touch/keypress anywhere
     const unlockAudio = () => {
       ensureAudioContext();
+      try {
+        const audioEl = document.getElementById('carewellAlarmAudio');
+        if (audioEl) {
+          audioEl.play().then(() => {
+            audioEl.pause();
+            audioEl.currentTime = 0;
+          }).catch(() => {});
+        }
+      } catch {}
       document.removeEventListener('click', unlockAudio);
       document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
     };
     document.addEventListener('click', unlockAudio, { once: true });
     document.addEventListener('keydown', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
+    // Listen for Service Worker messages to immediately play loud alarm
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'PLAY_LOUD_ALARM') {
+          playLoudAlarm(event.data.reminder || { name: 'Scheduled Medicine' });
+        }
+      });
+    }
+
+    // When window focuses or tab becomes visible, play alarm if triggered via query or due
+    window.addEventListener('focus', () => {
+      if (window.location.search.includes('alarm=true')) {
+        playLoudAlarm({ name: 'Scheduled Medicine' });
+        try {
+          window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        } catch {}
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && window.location.search.includes('alarm=true')) {
+        playLoudAlarm({ name: 'Scheduled Medicine' });
+        try {
+          window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        } catch {}
+      }
+    });
+
+    // Check if opened directly with ?alarm=true
+    if (typeof window !== 'undefined' && window.location.search.includes('alarm=true')) {
+      setTimeout(() => {
+        playLoudAlarm({ name: 'Scheduled Medicine' });
+        try {
+          window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        } catch {}
+      }, 350);
+    }
   }
 
   return {
@@ -630,6 +811,9 @@ const AlarmManager = (() => {
     previewTone,
     stopAlarm,
     triggerAlarm,
+    playLoudAlarm,
+    showLoudAlarmBar,
+    hideLoudAlarmBar,
     renderSettings,
     bindSettingsEvents,
     requestNotificationPermission

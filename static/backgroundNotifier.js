@@ -244,6 +244,9 @@
     // 4. Dispatch in-app custom event & trigger loud alarm if window is open
     if (typeof window !== 'undefined') {
       try {
+        if (window.AudioPlayer && typeof window.AudioPlayer.playSelectedRingtone === 'function') {
+          window.AudioPlayer.playSelectedRingtone(reminder.ringtone || reminder.tone);
+        }
         if (window.AlarmManager && typeof window.AlarmManager.playLoudAlarm === 'function') {
           window.AlarmManager.playLoudAlarm(reminder);
         }
