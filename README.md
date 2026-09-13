@@ -1,8 +1,14 @@
 <div align="center">
-  <h1>💊 CareWell (CarePill)</h1>
-  <p><strong>Next-Generation Healthcare & Smart Medication Management Platform</strong></p>
+  <h1>💊 Carewell</h1>
+  <p><strong>Smart Healthcare, Dosage Tracking & Real-Time Emergency Monitoring Platform</strong></p>
+
   <p>
-    An intelligent clinical triage and medicine adherence web application built to ensure patients never miss a dose, empower caregivers with real-time health monitoring, and guide individuals to nearby emergency medical care.
+    <a href="https://www.netlify.com/">
+      <img src="https://img.shields.io/badge/Deployed%20on-Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white" alt="Netlify Deployment" />
+    </a>
+    <img src="https://img.shields.io/badge/Next.js%2014-App%20Router-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/Database-Supabase%20(PostgreSQL)-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+    <img src="https://img.shields.io/badge/AI%20Engine-Gemini%20API-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google AI" />
   </p>
 </div>
 
@@ -10,46 +16,18 @@
 
 <h2>📌 Overview</h2>
 <p>
-  <strong>CareWell</strong> is a full-stack digital health application engineered to solve medication non-adherence and streamline patient triage. By combining AI-assisted clinical symptom assessment, precise dose tracking, inventory management, and location-based medical facility mapping, CareWell provides an end-to-end companion for patients, elderly users, and medical caregivers.
+  <strong>Carewell</strong> is an accessible, modern healthcare management system designed to streamline patient adherence and caregiver coordination. Featuring smart medication reminders, real-time sync, and AI-driven insights, Carewell keeps patients, doctors, and family caregivers connected seamlessly.
 </p>
-
-<hr />
-
-<h2>✨ Key Features</h2>
-
-<ul>
-  <li>
-    <strong>🤖 AI Clinical Triage Assistant:</strong> Integrated Gemini-powered clinical assessment that evaluates symptoms (e.g., chest tightness, pediatric cough, acute abdominal pain, severe migraine) and provides instant emergency triage guidance.
-  </li>
-  <li>
-    <strong>⏰ Smart Medicine Reminders & Dosage Tracking:</strong> Automated schedule tracking ensuring doses are taken on time, logging taken/missed statuses.
-  </li>
-  <li>
-    <strong>👨‍⚕️ Real-Time Caregiver Dashboard:</strong> Remote monitoring portal that lets family members or healthcare providers track patient adherence live.
-  </li>
-  <li>
-    <strong>📦 Pill Counter & Stock Alerts:</strong> Real-time tablet inventory tracking with automatic notifications when prescription refills are needed.
-  </li>
-  <li>
-    <strong>🗺️ Spatial Medical Radar:</strong> OpenStreetMap-powered facility locator that detects and ranks nearby emergency rooms, 24/7 trauma centers, and general clinics using proximity algorithms.
-  </li>
-  <li>
-    <strong>🚨 Emergency SOS Actions:</strong> Quick-trigger emergency hotlines and rapid alerts for critical health situations.
-  </li>
-  <li>
-    <strong>📱 Progressive Web App (PWA):</strong> Fully installable directly to the mobile or desktop home screen for native, app-like performance.
-  </li>
-</ul>
 
 <hr />
 
 <h2>🛠️ Tech Stack</h2>
 
-<table>
+<table width="100%">
   <thead>
     <tr>
-      <th>Layer</th>
-      <th>Technologies Used</th>
+      <th align="left">Layer</th>
+      <th align="left">Technologies Used</th>
     </tr>
   </thead>
   <tbody>
@@ -70,51 +48,50 @@
       <td>OpenStreetMap Overpass API</td>
     </tr>
     <tr>
-      <td><strong>Deployment & CI/CD</strong></td>
-      <td>Vercel, Git / GitHub</td>
+      <td><strong>Hosting & Deployment</strong></td>
+      <td>Netlify Edge Platform</td>
     </tr>
   </tbody>
 </table>
 
 <hr />
 
-<h2>🚀 Getting Started</h2>
-
-<h3>Prerequisites</h3>
+<h2>✨ Key Features</h2>
 <ul>
-  <li>Node.js (v18.x or later)</li>
-  <li>npm, pnpm, or yarn</li>
-  <li>Supabase project credentials</li>
-  <li>Google Gemini API key</li>
+  <li><strong>Smart Dosage & Medicine Tracker:</strong> Automated inventory tracking, decrement triggers, and schedule reminders.</li>
+  <li><strong>Real-Time Caregiver Dashboard:</strong> Sub-second telemetry and instant alerts via WebSockets powered by Supabase Realtime.</li>
+  <li><strong>AI Health Assistant:</strong> Personalized contextual insights and recommendations powered by Google Generative AI (Gemini SDK).</li>
+  <li><strong>Nearby Care Finder:</strong> Real-time discovery of nearby medical facilities using OpenStreetMap Overpass API.</li>
+  <li><strong>Security First:</strong> Row-Level Security (RLS) enforcement at the database layer ensuring HIPAA-grade data isolation.</li>
 </ul>
-
-<h3>Installation</h3>
-
-<pre><code># 1. Clone the repository
-git clone https://github.com/kumarsachin1240421-code/my-hackathon-project.git
-
-# 2. Navigate to project directory
-cd my-hackathon-project
-
-# 3. Install dependencies
-npm install
-
-# 4. Configure environment variables (.env.local)
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-GEMINI_API_KEY=your_google_gemini_api_key
-
-# 5. Start the local development server
-npm run dev
-</code></pre>
-
-<p>Open <a href="http://localhost:3000">http://localhost:3000</a> in your browser to view the application.</p>
 
 <hr />
 
-<h2>🛡️ Medical Disclaimer</h2>
-<p>
-  <em>
-    CareWell is an informational assistive tool designed for medication tracking and preliminary symptom guidance. It is not a substitute for professional clinical judgment, medical diagnosis, or emergency hospital intervention. In life-threatening emergencies, always dial 108/112 or visit the nearest healthcare center immediately.
-  </em>
-</p>
+<h2>⚙️ Getting Started</h2>
+
+<h3>1. Clone the repository</h3>
+<pre><code>git clone https://github.com/YOUR_USERNAME/carewell.git
+cd carewell</code></pre>
+
+<h3>2. Install dependencies</h3>
+<pre><code>npm install</code></pre>
+
+<h3>3. Setup Environment Variables</h3>
+<p>Create a <code>.env.local</code> file in the root directory and add:</p>
+<pre><code>NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+GEMINI_API_KEY=your_gemini_api_key</code></pre>
+
+<h3>4. Run locally</h3>
+<pre><code>npm run dev</code></pre>
+
+<hr />
+
+<h2>🚀 Deployment on Netlify</h2>
+<ol>
+  <li>Link your GitHub repository to <strong>Netlify</strong>.</li>
+  <li>Set Build Command to <code>npm run build</code> and Publish Directory to <code>.next</code>.</li>
+  <li>Ensure the <strong>@netlify/plugin-nextjs</strong> is installed or enabled in build settings.</li>
+  <li>Add your production variables (<code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, <code>GEMINI_API_KEY</code>) under <strong>Site Settings &gt; Environment Variables</strong>.</li>
+  <li>Trigger deploy!</li>
+</ol>
