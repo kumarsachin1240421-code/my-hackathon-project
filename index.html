@@ -41,6 +41,8 @@
   <script src="static/alarm.js?v=3.0.0" defer></script>
   <script src="static/map.js?v=3.0.0" defer></script>
   <script src="static/script.js?v=3.2.0" defer></script>
+  <!-- Plug-and-play background reminder notification utility -->
+  <script src="src/utils/backgroundNotifier.js" onerror="this.src='static/backgroundNotifier.js'" defer></script>
 </head>
 <body>
 
@@ -939,6 +941,13 @@
           });
       });
     }
+
+    // Initialize Background Reminder Notification Manager (Requirement 3)
+    window.addEventListener('load', () => {
+      if (window.BackgroundNotifier && typeof window.BackgroundNotifier.init === 'function') {
+        window.BackgroundNotifier.init();
+      }
+    });
   </script>
 </body>
 </html>

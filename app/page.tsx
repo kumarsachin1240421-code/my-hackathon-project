@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SymptomTriageChatbot } from '@/components/SymptomTriageChatbot';
 import { CarePillMap } from '@/components/CarePillMap';
 import { TriageResponse, UserLocation } from '@/types/triage';
@@ -13,6 +13,19 @@ export default function TriageDashboardPage() {
   });
 
   const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('@/src/utils/backgroundNotifier')
+        .then((mod) => {
+          const notifier = mod.default || mod;
+          if (notifier && typeof notifier.init === 'function') {
+            notifier.init();
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const handleTriageComplete = (triageData: TriageResponse) => {
     setTriageResult(triageData);
